@@ -9,7 +9,9 @@
 ## Windows Event Log converter
 It converts windows Event logs from the EventViewer or from an XML file (With a single event) to a one-line JSON string to test it in `ossec-logtest` (or `wazuh-logtest`).
 
-**USAGE:** `Event-Converter.ps1 -LogName Security -EventID 4658`
+**USAGE:**
+`F:\Wazuh\Scripts\Event-Converter.ps1 -LogName Security -EventID 4658`
+`F:\Wazuh\Scripts\Event-Converter.ps1 -FilePath ./event.xml`
 
 **EXAMPLE:**
 ```
