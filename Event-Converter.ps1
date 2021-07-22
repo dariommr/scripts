@@ -69,15 +69,18 @@ function ToLogtest($xml_evt) {
     }
     $nodes = $xml_evt.GetElementsByTagName("EventData").Data
     $json_evt['win']['eventData'] = @{}
-    $i = 0
-    foreach ($node in $nodes) {
-        if ($node.Name) {
+    if (!$nodes) {
+        foreach ($node in $nodes) {
             $json_evt['win']['eventData'].Add(($node.Name).substring(0,1).tolower()+($node.Name).substring(1), $node.InnerText)
         }
-        else {
-            $i += 1
-            $json_evt['win']['eventData'].Add("data"+$i, $node)
-        }
+    }
+    else {
+        [string]$data = ($xml_evt.GetElementsByTagName("Data")).InnerText
+        $json_evt['win']['eventData'].Add("data", $data)
+    }
+    $bin = ($xml_evt.GetElementsByTagName("Binary")).InnerText
+    if ($bin) {
+        $json_evt['win']['eventData'].Add("binary", $bin)
     }
     return $json_evt
 }
