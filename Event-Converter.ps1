@@ -69,7 +69,7 @@ function ToLogtest($xml_evt) {
     }
     $nodes = $xml_evt.GetElementsByTagName("EventData").Data
     $json_evt['win']['eventData'] = @{}
-    if (!$nodes) {
+    if ($nodes.Name) {
         foreach ($node in $nodes) {
             $json_evt['win']['eventData'].Add(($node.Name).substring(0,1).tolower()+($node.Name).substring(1), $node.InnerText)
         }
