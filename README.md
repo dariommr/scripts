@@ -33,3 +33,16 @@ Configure the Parent rule to link it to JSON decoder and not EventChannel
     <description>Group of windows rules</description>
   </rule>
 ```
+
+## Wazuh Cluster Monitoring Tool: monitor-cluster.py
+This tool can run in automatic or manual mode, in automatic mode, there is no need to pass arguments to it. In manual mode you need to specify only one argument.
+Tool parameters:
+```
+# Usage:
+#       monitor-cluster.py update|status
+# Parameters:
+#       update     Use this to create, or update the baseline file
+#       status     Gets the current status of the cluster
+# No parameters: The tool runs in automatic mode, if the baseline file is not crated
+#                it creates it, if not it runs the status check.
+```
