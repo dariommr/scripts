@@ -7,17 +7,19 @@
 ## Archived Logs Removal Tool: alrt.py
 
 ## Windows Event Log converter
-It converts windows Event logs from the EventViewer or from an XML file (With a single event) to a one-line JSON string to test it in `ossec-logtest` (or `wazuh-logtest`).
+It converts windows Event logs from the EventViewer or from a file containing the exported Event (see picture) to a one-line JSON string to test it in `ossec-logtest` (or `wazuh-logtest`).
+
+![image](https://user-images.githubusercontent.com/37050249/129812061-7bc1e2ed-b081-441b-8260-78a0f4bd789f.png)
 
 **USAGE:**
 ```
-F:\Wazuh\Scripts\Event-Converter.ps1 -LogName Security -EventID 4658
-F:\Wazuh\Scripts\Event-Converter.ps1 -FilePath ./event.xml
+F:\Wazuh\Scripts\Event-Converter.ps1 -LogName Security -EventID 4690
+F:\Wazuh\Scripts\Event-Converter.ps1 -FilePath ./event.evt
 ```
 
 **EXAMPLE:**
 ```
-{"win":{"system":{"level":"0","systemTime":"2021-07-01T23:19:44.0415260Z","opcode":"0","providerGuid":"{54849625-5478-4994-a5ba-3e3b0328c30d}","security":"","computer":"DESKTOP-Q1TV95Q","eventID":"4658","channel":"Security","task":"12800","version":"0","correlation":"","providerName":"Microsoft-Windows-Security-Auditing","keywords":"0x8020000000000000","eventRecordID":"174243649","message":"The handle to an object was closed.\\r\\n\\r\\nSubject :\\r\\n\\tSecurity ID:\\t\\tS-1-5-21-2470304919-1303594442-3450856006-1007\\r\\n\\tAccount Name:\\t\\tDario\\r\\n\\tAccount Domain:\\t\\tDESKTOP-Q1TV95Q\\r\\n\\tLogon ID:\\t\\t0x72F85\\r\\n\\r\\nObject:\\r\\n\\tObject Server:\\t\\tSecurity\\r\\n\\tHandle ID:\\t\\t0x694c\\r\\n\\r\\nProcess Information:\\r\\n\\tProcess ID:\\t\\t0x3004\\r\\n\\tProcess Name:\\t\\tC:\\\\Program Files\\\\Google\\\\Drive\\\\googledrivesync.exe"},"eventData":{"subjectDomainName":"DESKTOP-Q1TV95Q","subjectLogonId":"0x72f85","processId":"0x3004","handleId":"0x694c","subjectUserName":"Dario","objectServer":"Security","subjectUserSid":"S-1-5-21-2470304919-1303594442-3450856006-1007","processName":"C:\\\\Program Files\\\\Google\\\\Drive\\\\googledrivesync.exe"}}}
+{"win":{"system":{"level":"0","systemTime":"2021-08-17T22:00:43.6300632Z","opcode":"0","providerGuid":"{54849625-5478-4994-a5ba-3e3b0328c30d}","security":"","computer":"DESKTOP-Q1TV95Q","eventID":"4690","channel":"Security","task":"12807","version":"0","correlation":"","severityValue":"Information","providerName":"Microsoft-Windows-Security-Auditing","keywords":"0x8020000000000000","eventRecordID":"426523486","message":"An attempt was made to duplicate a handle to an object.\\r\\n\\r\\nSubject:\\r\\n\\tSecurity ID:\\t\\tDESKTOP-Q1TV95Q\\\\Dario\\r\\n\\tAccount Name:\\t\\tDario\\r\\n\\tAccount Domain:\\t\\tDESKTOP-Q1TV95Q\\r\\n\\tLogon ID:\\t\\t0x122458\\r\\n\\r\\nSource Handle Information:\\r\\n\\tSource Handle ID:\\t0xf60\\r\\n\\tSource Process ID:\\t0x2e54\\r\\n\\r\\nNew Handle Information:\\r\\n\\tTarget Handle ID:\\t0x5a1c\\r\\n\\tTarget Process ID:\\t0x4\\r\\nEvent Xml:\\r\\n"},"eventData":{"subjectDomainName":"DESKTOP-Q1TV95Q","subjectLogonId":"0x122458","targetProcessId":"0x4","sourceHandleId":"0xf60","subjectUserName":"Dario","sourceProcessId":"0x2e54","subjectUserSid":"S-1-5-21-2470304919-1303594442-3450856006-1007","targetHandleId":"0x5a1c"}}}
 ```
 
 **Configurations needed:**
