@@ -86,7 +86,14 @@ function ToLogtest($xml_evt) {
 }
 
 if ($FilePath) {
-    [xml]$xml_ini = Get-Content $FilePath
+    $in_file = Get-Content $FilePath
+    $ln_num = ($in_file | Select-String -Pattern "Event Xml:").LineNumber
+    [xml]$xml_ini = $in_file[$ln_num..$in_file.Count]
+    
+    $sev_arr = ($in_file | Select-String -Pattern "Level:") -Split(":")
+    $sev = $sev_arr[1].Trim()
+    $ln_from = ($in_file | Select-String -Pattern "Description:").LineNumber
+    $msg = (($in_file[$ln_from..($ln_num-1)]) | Out-String | ConvertTo-Json -Compress).replace('"', "")
 }
 else {
     if ($RecordID) {
@@ -98,11 +105,12 @@ else {
         [xml]$xml_ini = ($evt).ToXML()
     }
     $msg = $evt.Message
+    $sev = $evt.LevelDisplayName
 }
 
 $json_fnl = ToLogtest($xml_ini)
-if ($msg) {
-    $json_fnl['win']['system'].Add('message',$msg)
-}
+$json_fnl['win']['system'].Add('message',$msg)
+$json_fnl['win']['system'].Add('severityValue',$sev)
+
 
 $json_fnl | ConvertTo-Json -Depth 10 -Compress
