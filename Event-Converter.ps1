@@ -93,7 +93,7 @@ if ($FilePath) {
     $sev_arr = ($in_file | Select-String -Pattern "Level:") -Split(":")
     $sev = $sev_arr[1].Trim()
     $ln_from = ($in_file | Select-String -Pattern "Description:").LineNumber
-    $msg = (($in_file[$ln_from..($ln_num-1)]) | Out-String | ConvertTo-Json -Compress).replace('"', "")
+    $msg = (($in_file[$ln_from..($ln_num-1)]) | Out-String)
 }
 else {
     if ($RecordID) {
