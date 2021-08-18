@@ -110,7 +110,7 @@ else {
 
 $json_fnl = ToLogtest($xml_ini)
 $json_fnl['win']['system'].Add('message',$msg)
-$json_fnl['win']['system'].Add('severityValue',$sev)
+$json_fnl['win']['system'].Add('severityValue',$sev.ToUpper()))
 
 
 $json_fnl | ConvertTo-Json -Depth 10 -Compress
