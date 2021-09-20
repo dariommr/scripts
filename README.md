@@ -64,3 +64,5 @@ optional arguments:
                         Specify the custom fields file
 ```
 **Note:** This script uses the module `deepdiff`, so it is needed to install the module before using it: `pip install deepdiff`
+
+## Tool to dump all Wazuh Indices in Elasticsearch to JSON: elastic-dump.sh
