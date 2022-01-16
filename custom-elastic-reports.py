@@ -40,7 +40,6 @@ def send_email(FROM, TO, SERVER, MESSAGE):
     asparagus_cid = make_msgid(domain="wazuh.com")
     msg_body = MESSAGE
     em.add_alternative(msg_body.format(asparagus_cid=asparagus_cid[1:-1]), subtype='html')
-    print(em.get_payload()[0])
     em['To'] = TO
     em['From'] = FROM
     em['Subject'] = "Wazuh Report"
@@ -54,12 +53,16 @@ def send_email(FROM, TO, SERVER, MESSAGE):
         logging.error("Failed to send mail with error: {}".format(e))
         sys.exit(1)
 
-
 # Function to Get the Visualization parameters
 def get_vis(vis_id):
     hook_url = "https://"+kibana_ip+"/api/saved_objects/visualization/"+vis_id
-    result = requests.get(hook_url, auth=(user, passw), verify=False)
-    data = json.loads(result.text)
+    try:
+        result = requests.get(hook_url, auth=(user, passw), verify=False)
+        data = json.loads(result.text)
+        logging.info("Retrieved visualization information from Kibana successfully")
+    except Exception as e:
+        logging.error("Failed to retrieve visualization information: {}".format(e))
+        sys.exit(1)
     query_config = json.loads(data["attributes"]["kibanaSavedObjectMeta"]["searchSourceJSON"])
     vis_configs = json.loads(data["attributes"]["visState"])
     if len(query_config["filter"]) > 0:
@@ -115,8 +118,13 @@ def search(data_dict):
     hook_url = "https://"+elastic_ip+":9200/_search"
     headers = {'Content-Type': 'application/json'}
     data = json.dumps(data_dict)
-    json_result = requests.get(hook_url, auth=(user, passw), verify=False, headers=headers, data=data)
-    result = json.loads(json_result.text)
+    try:
+        json_result = requests.get(hook_url, auth=(user, passw), verify=False, headers=headers, data=data)
+        result = json.loads(json_result.text)
+        logging.info("Search executed in Elasticsearch server successfully")
+    except Exception as e:
+        logging.error("Failed to execute search in Elasticsearch server: {}".format(e))
+        sys.exit(1)
     return result["aggregations"]
 
 def extract_data(search_dict):
@@ -166,6 +174,7 @@ def create_graph(in_json):
         title = "<h2>"+vis["title"]+" in the last "+timeframe+" days</h2>"
         html_table = table.to_html(index=False)
         html_graph = title+"\n"+html_table
+        logging.info("Table graph created")
     if vis["type"] == "pie":
         table = pd.DataFrame(in_json)
         plt.pie(table[table.columns[0]],labels=table[table.columns[1]],autopct='%1.1f%%')
@@ -174,6 +183,7 @@ def create_graph(in_json):
         plt.savefig("pie.png")
         src_pie = os.path.join(start_dir, "pie.png")
         html_graph = '<img alt="{}" src="{}">'.format(vis["title"], src_pie)
+        logging.info("Pie graph created")
     if vis["type"] == "histogram":
         if len(in_json.keys()) > 2:
             tmp_json = dict(list(in_json.items())[:2])
@@ -187,6 +197,7 @@ def create_graph(in_json):
         plt.savefig("bar.png")
         src_bar = os.path.join(start_dir, "bar.png")
         html_graph = '<img alt="{}" src="{}">'.format(vis["title"], src_bar)
+        logging.info("Bar graph created")
     plt.close()
     return html_graph
 
@@ -214,6 +225,7 @@ if __name__ == "__main__":
     smtp = args.smtp[0]
     sender = args.sender[0]
     rcpt = args.to
+    logging.info("Parameters loaded successfully")
 
     try:
         file_list = open(cdb_list, "r")
@@ -223,12 +235,21 @@ if __name__ == "__main__":
         logging.error("Failed to load the CDB list: {}".format(e))
         sys.exit(1)
 
+    logging.info("Writing the Report Body")
     body = "<body>\n<h1>Wazuh Report</h1>\n"
     for line in list:
-        arr_line = line.split(":")
-        vis_id = line.split(":")[0]
-        if len(arr_line) > 1:
-            timeframe = line.split(":")[1].strip()
+        try:
+            arr_line = line.split(":")
+            vis_id = line.split(":")[0]
+            if len(arr_line) > 1:
+                timeframe = line.split(":")[1].strip()
+            else:
+                timeframe = "30"
+            logging.info("Visualization parameters loaded for ID {} and timeframe {}".format(vis_id, timeframe))
+        except Exception as e:
+            logging.warning("Failed loading the visualization parameters, ignoring line")
+            continue
+
         vis = get_vis(vis_id)
         aggs = build_aggs(vis,timeframe)
         srch_res = search(aggs)
