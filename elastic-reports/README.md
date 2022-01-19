@@ -19,14 +19,14 @@
   /var/ossec/framework/python/bin/pip3 install matplotlib
   ```
   ### Generate the visualization list
-  The script will query a CDB List in that can be generated from the Wazuh UI (Kibana App) or through the terminal console of the Wazuh Manager, in which you need to specify the visualizations ID that you want to add to the report thet will be sent in the email message, for instance:
+  The script will query a CDB List that can be generated from the Wazuh UI (Kibana App) or through the terminal console of the Wazuh Manager, in which you need to specify the visualizations ID that you want to add to the report thet will be sent in the email message, for instance:
   ```
   eebeaf20-1d86-11ec-8551-f505aa070eaf:180
   c83ac5e0-165c-11ec-9126-8957fb49eea0:180
   0556cfc0-09c7-11ec-b7d0-ad7375fceb8d:90
   ```
   From one side you can see the IDs regarding the visualizations, on the other side, you can see the number of days that will be used to build the timeframe of the query for Elasticsearch.
-  The list mus have a name specified that later will be added as a parameter in the script execution.
+  The list must have a name specified that later will be added as a parameter in the script execution.
 
   To extract those IDs, you need to verify the URL of the created visualization, for instance:
   ![image](https://user-images.githubusercontent.com/37050249/149815309-893b4249-f16e-4b38-be62-10f2157d516a.png)
