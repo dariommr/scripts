@@ -4,7 +4,7 @@
   
   ## Rationale
 
-  This script was intended to be used for extracting visualizations already created in Kibana and writying them into an HTML format email message. The supported visualizations are: 
+  This script was intended to be used for extracting visualizations already created in Kibana and writting them into an HTML format email message. The supported visualizations are: 
 
   - Tables (Data Table, only configured with `Split Rows` and `Terms` as aggregations)
   - Pie Charts (Pie, only configured with `Split Slices` and `Terms` as aggregations)
