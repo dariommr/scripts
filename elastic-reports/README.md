@@ -8,7 +8,7 @@
 
   - Tables (Data Table, only configured with `Split Rows` and `Terms` as aggregations)
   - Pie Charts (Pie, only configured with `Split Slices` and `Terms` as aggregations)
-  - Bar Charts or Histograms (Vertical Bar, only configured with `Split Series` and `Terms` as aggregations)
+  - Bar Charts or Histograms (Vertical Bar, only configured with `X-axis` and `Terms` as aggregations)
 
   ## How to use it?
   ### Install the dependencies
