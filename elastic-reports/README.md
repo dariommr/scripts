@@ -98,7 +98,7 @@
 
   - Tablas (Data Table, only configured with `Split Rows` and `Terms` as aggregations)
   - Graficos de torta (Pie, only configured with `Split Slices` and `Terms` as aggregations)
-  - Graficos de barra o histogramas (Vertical Bar, only configured with `Split Series` and `Terms` as aggregations)
+  - Graficos de barra o histogramas (Vertical Bar, only configured with `X-axis` and `Terms` as aggregations)
 
   ## Cómo utilizarlo?
   ### Instalar dependencias
