@@ -22,8 +22,7 @@ from email.utils import make_msgid
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 start_dir = os.path.dirname(os.path.realpath(__file__))
-#wazuh_dir = "/var/ossec/"
-wazuh_dir = "."
+wazuh_dir = "/var/ossec/"
 logo = "https://demo.wazuh.com/ui/wazuh_logo_circle.svg"
 
 # Configuring logger
@@ -271,8 +270,7 @@ if __name__ == "__main__":
 
     if args.cdblist:
         list_name = args.cdblist
-        #lists_dir = os.path.join(wazuh_dir, "etc/lists/")
-        lists_dir = "."
+        lists_dir = os.path.join(wazuh_dir, "etc/lists/")
         cdb_list = os.path.join(lists_dir, list_name)
         html_title = "Visualizations"
         try:
