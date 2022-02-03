@@ -38,6 +38,9 @@
   To extract those IDs, you need to verify the URL of the created visualization, for instance:
   ![image](https://user-images.githubusercontent.com/37050249/149815309-893b4249-f16e-4b38-be62-10f2157d516a.png)
 
+  ### Using a dashboard
+  You can create a dashboard (having in mind the limits of the script described in the Rationale section) that contain all the visualizations. Take note the name of the dashboard you are creating because that will be the parameter you have to add to the script command.
+    
   ### Give permissions to the script
   Add execution permissions to the script and change the ownership:
   ```
@@ -45,9 +48,6 @@
   chown root:ossec /var/ossec/integrations/custom-elastic-reports.py
   ```
   
-  ### Using a dashboard
-  You can create a dashboard (having in mind the limits of the script described in the Rationale section) that contain all the visualizations. Take note the name of the dashboard you are creating because that will be the parameter you have to add to the script command.
-
   ### Execute the script
   It can be executed manually, or through a wodle command, the parameters are as follows:
   ```
@@ -78,7 +78,7 @@ options:
   ```
   An example:
   ```
-  python custom-elastic-reports.py --creds admin:admin --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender dariomenten@gmail.com --to test.alerts.dmr@gmail.com  --dashboard "Basic Dashboard" --time 180 days
+  python custom-elastic-reports.py --creds admin:admin --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender sender@gmail.com --to recipient@gmail.com  --dashboard "Basic Dashboard" --time 180 days
   ```
   It is not needed to specify the Kibana server, if it is not specified it assumes the Elasticsearch server contains the Kibana service too.
 
