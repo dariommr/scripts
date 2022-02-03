@@ -33,6 +33,7 @@
   0556cfc0-09c7-11ec-b7d0-ad7375fceb8d:90
   ```
   From one side you can see the IDs regarding the visualizations, on the other side, you can see the number of days that will be used to build the timeframe of the query for Elasticsearch. You will have to use the `--time` parameter regardless of the time you applied for every visualization, but the time in the CDB list will have precedence over the `--time` parameter. If for any reason the script can not read the time from the list, it will apply the time from the parameter.
+  
   The list must have a name specified that later will be added as a parameter in the script execution.
 
   To extract those IDs, you need to verify the URL of the created visualization, for instance:
@@ -121,14 +122,17 @@ options:
   /var/ossec/framework/python/bin/pip3 install pandas
   /var/ossec/framework/python/bin/pip3 install matplotlib
   ```
-  ### Generar la lista de visualizaciones
+  ### Usar una lista de visualizaciones
+  >Only while using the `--cdblist` parameter
+  
   El script va a consultar una CDB List, que usted puede generar tanto desde la UI de Wazuh como desde la consola, en la cual se deberán especificar los IDs de las visualizaciones que se pretende que aparezcan en el correo de reporte, un ejemplo:
   ```
   eebeaf20-1d86-11ec-8551-f505aa070eaf:180
   c83ac5e0-165c-11ec-9126-8957fb49eea0:180
   0556cfc0-09c7-11ec-b7d0-ad7375fceb8d:90
   ```
-  Se puede ver de un lado los IDs correspondientes, y del otro los numeros que corresponden a la cantidad de dias que se van a tener en cuenta como tiempo para la consulta de la informacion en Elasticsearch.
+  Se puede ver de un lado los IDs correspondientes, y del otro los numeros que corresponden a la cantidad de dias que se van a tener en cuenta como tiempo para la consulta de la informacion en Elasticsearch. Es necesario declarar el parametro time en la ejecucion del script `--time` independientemente de lo que se declara en la lista para cada visualizacion, y este tiempo declarado en la lista tendrá precedencia sobre el paramentro `--time`. Si por alguna razón el script no puede leer el tiempo desde la lista, este aplicará el parametro `--time`.
+  
   Se le debe colocar un nombre a la lista que luego se especificará en el comando del script.
 
   Para extraer dichos IDs, se debe verificar la visualizacion creada, por ejemplo:
@@ -181,7 +185,7 @@ options:
     <wodle name="command">
       <disabled>no</disabled>
       <tag>elastic-reports</tag>
-      <command>/var/ossec/framework/python/bin/python3 /var/ossec/integrations/custom-elastic-reports --to destino@wazuh.com --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender origen@wazuh.com --creds admin:admin --cdblist report-list</command>
+      <command>/var/ossec/framework/python/bin/python3 /var/ossec/integrations/custom-elastic-reports.py --creds admin:admin --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender sender@gmail.com --to recipient@gmail.com  --dashboard "Basic Dashboard" --time 180 days</command>
       <interval>1w</interval>
       <ignore_output>yes</ignore_output>
       <run_on_start>yes</run_on_start>
