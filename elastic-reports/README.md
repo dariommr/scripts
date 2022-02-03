@@ -1,3 +1,8 @@
+## Update
+03/02/2022 - Added the function to extract the visualizations from a dashboard.
+
+## Documentation
+
 <details open>
 <summary>English Documentation</summary>
 <br>
@@ -18,14 +23,16 @@
   /var/ossec/framework/python/bin/pip3 install pandas
   /var/ossec/framework/python/bin/pip3 install matplotlib
   ```
-  ### Generate the visualization list
+  ### Using a visualization list
+  >Only while using the `--cdblist` parameter
+  
   The script will query a CDB List that can be generated from the Wazuh UI (Kibana App) or through the terminal console of the Wazuh Manager, in which you need to specify the visualizations ID that you want to add to the report thet will be sent in the email message, for instance:
   ```
   eebeaf20-1d86-11ec-8551-f505aa070eaf:180
   c83ac5e0-165c-11ec-9126-8957fb49eea0:180
   0556cfc0-09c7-11ec-b7d0-ad7375fceb8d:90
   ```
-  From one side you can see the IDs regarding the visualizations, on the other side, you can see the number of days that will be used to build the timeframe of the query for Elasticsearch.
+  From one side you can see the IDs regarding the visualizations, on the other side, you can see the number of days that will be used to build the timeframe of the query for Elasticsearch. You will have to use the `--time` parameter regardless of the time you applied for every visualization, but the time in the CDB list will have precedence over the `--time` parameter. If for any reason the script can not read the time from the list, it will apply the time from the parameter.
   The list must have a name specified that later will be added as a parameter in the script execution.
 
   To extract those IDs, you need to verify the URL of the created visualization, for instance:
@@ -37,35 +44,41 @@
   chmod ug+x /var/ossec/integrations/custom-elastic-reports.py
   chown root:ossec /var/ossec/integrations/custom-elastic-reports.py
   ```
+  
+  ### Using a dashboard
+  You can create a dashboard (having in mind the limits of the script described in the Rationale section) that contain all the visualizations. Take note the name of the dashboard you are creating because that will be the parameter you have to add to the script command.
 
   ### Execute the script
   It can be executed manually, or through a wodle command, the parameters are as follows:
   ```
-  # python custom-elastic-reports.py -h
+  $ python custom-elastic-reports.py --help
   usage: custom-elastic-reports.py [-h] --creds CREDS [CREDS ...] --elk-server ELK_SERVER [ELK_SERVER ...] [--kbn-server KBN_SERVER [KBN_SERVER ...]] --smtp SMTP [SMTP ...] --sender SENDER
-                                   [SENDER ...] --to TO [TO ...] --cdblist CDBLIST [CDBLIST ...]
+                                 [SENDER ...] --to TO [TO ...] [--dashboard DASHBOARD | --cdblist CDBLIST] --time TIME [TIME ...]
 
-  Create email Reports from custom visualizations in Kibana
+Create email Reports from custom visualizations in Kibana
 
-  options:
-    -h, --help            show this help message and exit
-    --creds CREDS [CREDS ...]
-                          Elasticsearch credentials (user:password)
-    --elk-server ELK_SERVER [ELK_SERVER ...]
-                          Elasticsearch server address
-    --kbn-server KBN_SERVER [KBN_SERVER ...]
-                          Kibana server address
-    --smtp SMTP [SMTP ...]
-                          SMTP Server address
-    --sender SENDER [SENDER ...]
-                          Sender email address
-    --to TO [TO ...]      Recipient email address
-    --cdblist CDBLIST [CDBLIST ...]
-                          Name of the CDBList used to get the visualizations
+options:
+  -h, --help            show this help message and exit
+  --creds CREDS [CREDS ...]
+                        Elasticsearch credentials (user:password)
+  --elk-server ELK_SERVER [ELK_SERVER ...]
+                        Elasticsearch server address
+  --kbn-server KBN_SERVER [KBN_SERVER ...]
+                        Kibana server address
+  --smtp SMTP [SMTP ...]
+                        SMTP Server address
+  --sender SENDER [SENDER ...]
+                        Sender email address
+  --to TO [TO ...]      Recipient email address
+  --dashboard DASHBOARD
+                        Name of the dashboard containing the visualizations. Can not use --cdblist with this option
+  --cdblist CDBLIST     Name of the cdb list containing the visualizations. Can not use --dashboard with this option
+  --time TIME [TIME ...]
+                        Filter the visualizations for last N days
   ```
   An example:
   ```
-  /var/ossec/integrations/custom-elastic-reports.py --to destino@wazuh.com --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender origen@wazuh.com --creds admin:admin --cdblist report-list
+  python custom-elastic-reports.py --creds admin:admin --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender dariomenten@gmail.com --to test.alerts.dmr@gmail.com  --dashboard "Basic Dashboard" --time 180 days
   ```
   It is not needed to specify the Kibana server, if it is not specified it assumes the Elasticsearch server contains the Kibana service too.
 
@@ -77,7 +90,7 @@
     <wodle name="command">
       <disabled>no</disabled>
       <tag>elastic-reports</tag>
-      <command>/var/ossec/framework/python/bin/python3 /var/ossec/integrations/custom-elastic-reports.py --to destino@wazuh.com --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender origen@wazuh.com --creds admin:admin --cdblist report-list</command>
+      <command>/var/ossec/framework/python/bin/python3 /var/ossec/integrations/custom-elastic-reports.py --creds admin:admin --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender sender@gmail.com --to recipient@gmail.com  --dashboard "Basic Dashboard" --time 180 days</command>
       <interval>1w</interval>
       <ignore_output>yes</ignore_output>
       <run_on_start>yes</run_on_start>
