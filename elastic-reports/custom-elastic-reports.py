@@ -19,12 +19,12 @@ import xml.etree.ElementTree as ET
 import smtplib
 from email.message import EmailMessage
 from email.utils import make_msgid
-import mimetypes
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 start_dir = os.path.dirname(os.path.realpath(__file__))
-wazuh_dir = "/var/ossec/"
-logo = "https://ci6.googleusercontent.com/proxy/1zblkNvSAgPKI9UO113mpusZOy-o0md3svlhhH-Vas9gYwqdUBLEtWhCI8ikf98EjVkRihZKfanHQhxq_GCuu-9ULbKeJdXtZasBwY1qQdXyTEclgOZz2em4pvEOep7rfWVu712U95sSXUc=s0-d-e1-ft"
+#wazuh_dir = "/var/ossec/"
+wazuh_dir = "."
+logo = "https://demo.wazuh.com/ui/wazuh_logo_circle.svg"
 
 # Configuring logger
 def set_logger(name, logfile=None):
@@ -55,6 +55,19 @@ def send_email(TO, SERVER, MESSAGE):
         logging.error("Failed to send mail with error: {}".format(e))
         sys.exit(1)
 
+# Function to Get the list of visualizations from the dashboard
+def get_dash(dash_tit):
+    hook_url = "https://"+kibana_ip+"/api/saved_objects/_find?type=dashboard&search_fields=title&search="+dash_tit
+    try:
+        result = requests.get(hook_url, auth=(user, passw), verify=False)
+        data = json.loads(result.text)
+        logging.info("Retrieved information from Kibana Dashboard {} successfully".format(dash_tit))
+        list = data["saved_objects"][0]["references"]
+    except Exception as e:
+        logging.error("Failed to retrieve dashboard information: {}".format(e))
+        sys.exit(1)
+    return list
+
 # Function to Get the Visualization parameters
 def get_vis(vis_id):
     hook_url = "https://"+kibana_ip+"/api/saved_objects/visualization/"+vis_id
@@ -65,12 +78,16 @@ def get_vis(vis_id):
     except Exception as e:
         logging.error("Failed to retrieve visualization information: {}".format(e))
         sys.exit(1)
-    query_config = json.loads(data["attributes"]["kibanaSavedObjectMeta"]["searchSourceJSON"])
-    vis_configs = json.loads(data["attributes"]["visState"])
-    if len(query_config["filter"]) > 0:
-        vis_configs["filter"] = {}
-        for item in query_config["filter"]:
-            vis_configs["filter"].update(item["query"])
+    try:
+        query_config = json.loads(data["attributes"]["kibanaSavedObjectMeta"]["searchSourceJSON"])
+        vis_configs = json.loads(data["attributes"]["visState"])
+        if len(query_config["filter"]) > 0:
+            vis_configs["filter"] = {}
+            for item in query_config["filter"]:
+                vis_configs["filter"].update(item["query"])
+    except Exception as e:
+        logging.error("Error. The visualization contains not supported configurations: {}".format(e))
+        sys.exit(1)
     return vis_configs
 
 #Function to build the search query from the visualization parameters
@@ -139,73 +156,83 @@ def extract_data(search_dict):
         dict_out[id] = []
         dict_out["count"] = []
         sec_ids = []
-        for sk in search_dict[id]["buckets"][0]:
-            if sk.isnumeric():
-                sec_ids.append(sk)
-        for bucket in search_dict[id]["buckets"]:
-            dict_out[id].append(bucket["key"])
-            dict_out["count"].append(bucket["doc_count"])
-            for sid in sec_ids:
-                if not sid in dict_out:
-                    dict_out[sid] = []
-                for sbucket in bucket[sid]["buckets"]:
-                    dict_out[sid].append(sbucket["key"])
+        if len(search_dict[id]["buckets"]) == 0:
+            dict_out["error"] = "No_buckets"
+        else:
+            for sk in search_dict[id]["buckets"][0]:
+                if sk.isnumeric():
+                    sec_ids.append(sk)
+            for bucket in search_dict[id]["buckets"]:
+                dict_out[id].append(bucket["key"])
+                dict_out["count"].append(bucket["doc_count"])
+                for sid in sec_ids:
+                    if not sid in dict_out:
+                        dict_out[sid] = []
+                    for sbucket in bucket[sid]["buckets"]:
+                        dict_out[sid].append(sbucket["key"])
     return dict_out
 
 def create_table(vis_dict, search_dict):
     data_dict = extract_data(search_dict)
-    json_table = {}
-    for column in vis_dict["aggs"]:
-        if column["schema"] == "metric":
-            if "customLabel" in column["params"]:
-                json_table[column["params"]["customLabel"]] = data_dict["count"]
+    if "error" in data_dict:
+        json_table = data_dict
+    else:
+        json_table = {}
+        for column in vis_dict["aggs"]:
+            if column["schema"] == "metric":
+                if "customLabel" in column["params"]:
+                    json_table[column["params"]["customLabel"]] = data_dict["count"]
+                else:
+                    json_table[column["type"]] = data_dict["count"]
             else:
-                json_table[column["type"]] = data_dict["count"]
-        else:
-            if "customLabel" in column["params"]:
-                json_table[column["params"]["customLabel"]] = data_dict[column["id"]]
-            else:
-                json_table[column["params"]["field"]] = data_dict[column["id"]]
+                if "customLabel" in column["params"]:
+                    json_table[column["params"]["customLabel"]] = data_dict[column["id"]]
+                else:
+                    json_table[column["params"]["field"]] = data_dict[column["id"]]
     return json_table
 
 def create_graph(in_json):
     plt.cla()
     plt.clf()
-    if vis["type"] == "table":
-        table = pd.DataFrame(in_json)
-        title = "<h2>"+vis["title"]+" in the last "+timeframe+" days</h2>"
-        html_table = table.to_html(index=False)
-        html_graph = title+"\n"+html_table
+    title = vis["title"]+" in the last "+timeframe+" days"
+    if "error" in in_json:
+        html_graph = "<h2>"+title+"</h2>\n(No data in the timeframe selected)\n"
         src_cid = "no_cid"
-        logging.info("Table graph created")
-    if vis["type"] == "pie":
-        table = pd.DataFrame(in_json)
-        plt.pie(table[table.columns[0]],labels=table[table.columns[1]],autopct='%1.1f%%')
-        plt.title(vis["title"]+" in the last "+timeframe+" days")
-        plt.axis('equal')
-        plt.savefig(os.path.join(start_dir, "pie.png"))
-        src_cid = make_msgid(domain='wazuh.com')
-        html_graph = '<img alt="{}" src="cid:{}">'.format(vis["title"], src_cid[1:-1])
-        logging.info("Pie graph created")
-    if vis["type"] == "histogram":
-        if len(in_json.keys()) > 2:
-            tmp_json = dict(list(in_json.items())[:2])
-        else:
-            tmp_json = in_json
-        table = pd.DataFrame(tmp_json)
-        plt.bar(table[table.columns[1]],table[table.columns[0]])
-        plt.xlabel(table.columns[1])
-        plt.ylabel(table.columns[0])
-        plt.title(vis["title"]+" in the last "+timeframe+" days")
-        plt.savefig(os.path.join(start_dir, "bar.png"))
-        src_cid = make_msgid(domain='wazuh.com')
-        html_graph = '<img alt="{}" src="cid:{}">'.format(vis["title"], src_cid[1:-1])
-        logging.info("Bar graph created")
-    plt.close()
+        logging.warning("No data in for the visualization in the timeframe selected, ignoring")
+    else:
+        if vis["type"] == "table":
+            table = pd.DataFrame(in_json)
+            html_table = table.to_html(index=False)
+            html_graph = "<h2>"+title+"</h2>\n"+html_table
+            src_cid = "no_cid"
+            logging.info("Table graph created")
+        if vis["type"] == "pie":
+            table = pd.DataFrame(in_json)
+            plt.pie(table[table.columns[0]],labels=table[table.columns[1]],autopct='%1.1f%%')
+            plt.title(title)
+            plt.axis('equal')
+            plt.savefig(os.path.join(start_dir, "pie.png"))
+            src_cid = make_msgid(domain='wazuh.com')
+            html_graph = '<img alt="{}" src="cid:{}">'.format(vis["title"], src_cid[1:-1])
+            logging.info("Pie graph created")
+        if vis["type"] == "histogram":
+            if len(in_json.keys()) > 2:
+                tmp_json = dict(list(in_json.items())[:2])
+            else:
+                tmp_json = in_json
+            table = pd.DataFrame(tmp_json)
+            plt.bar(table[table.columns[1]],table[table.columns[0]])
+            plt.xlabel(table.columns[1])
+            plt.ylabel(table.columns[0])
+            plt.title(title)
+            plt.savefig(os.path.join(start_dir, "bar.png"))
+            src_cid = make_msgid(domain='wazuh.com')
+            html_graph = '<img alt="{}" src="cid:{}">'.format(vis["title"], src_cid[1:-1])
+            logging.info("Bar graph created")
+        plt.close()
     return html_graph, src_cid
 
 if __name__ == "__main__":
-    set_logger("custom-elastic-reports", os.path.join(wazuh_dir, "logs/integrations.log"))
     # Parsing the arguments
     parser = argparse.ArgumentParser(prog="custom-elastic-reports.py", description='Create email Reports from custom visualizations in Kibana')
     parser.add_argument('--creds', nargs='+', help='Elasticsearch credentials (user:password)', required=True)
@@ -214,7 +241,10 @@ if __name__ == "__main__":
     parser.add_argument('--smtp', nargs='+', help='SMTP Server address', required=True)
     parser.add_argument('--sender', nargs='+', help='Sender email address', required=True)
     parser.add_argument('--to', nargs='+', help='Recipient email address', required=True)
-    parser.add_argument('--cdblist', nargs='+', help='Name of the CDBList used to get the visualizations', required=True)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--dashboard', help='Name of the dashboard containing the visualizations. Can not use --cdblist with this option')
+    group.add_argument('--cdblist', help='Name of the cdb list containing the visualizations. Can not use --dashboard with this option')
+    parser.add_argument('--time', nargs='+', help='Filter the visualizations for last N days', required=True)
     args = parser.parse_args()
     if not (args.creds and args.elk_server and args.smtp and args.sender and args.to):
         parser.print_help(sys.stderr)
@@ -226,47 +256,64 @@ if __name__ == "__main__":
         kibana_ip = args.kbn_server[0]
     else:
         kibana_ip = elastic_ip
+    if args.dashboard:
+        if not args.time:
+            print("ERROR: The --time argument must be set")
+            parser.print_help(sys.stderr)
+            sys.exit(1)
     smtp = args.smtp[0]
     sender = args.sender[0]
     rcpt = args.to
-    list_name = args.cdblist[0]
+    set_logger("custom-elastic-reports", os.path.join(wazuh_dir, "logs/integrations.log"))
+    
     logging.info("------- Starting the Reporting Tool -------")
     logging.info("Parameters loaded successfully")
 
-    lists_dir = os.path.join(wazuh_dir, "etc/lists/")
-    cdb_list = os.path.join(lists_dir, list_name)
-    try:
-        file_list = open(cdb_list, "r")
-        list = file_list.readlines()
-        logging.info("Visualization list loaded successfully")
-    except Exception as e:
-        logging.error("Failed to load the CDB list: {}".format(e))
-        sys.exit(1)
+    if args.cdblist:
+        list_name = args.cdblist
+        #lists_dir = os.path.join(wazuh_dir, "etc/lists/")
+        lists_dir = "."
+        cdb_list = os.path.join(lists_dir, list_name)
+        html_title = "Visualizations"
+        try:
+            file_list = open(cdb_list, "r")
+            list = file_list.readlines()
+            logging.info("Visualization CDB list loaded successfully")
+        except Exception as e:
+            logging.error("Failed to load the CDB list: {}".format(e))
+            sys.exit(1)
+    if args.dashboard:
+        list = get_dash(args.dashboard)
+        html_title = args.dashboard
 
     logging.info("Writing the Report Body")
     body = "<body>\n"
-
+    
     header = """<table style="text-align: left; width: 824px; height: 205px;" border="0" cellpadding="2" cellspacing="2">\n
       <tbody>\n
         <tr>\n
-          <td style="width: 287px;"><img style="width: 320px; height: 132px;" alt="Wazuh Logo" src={}></td>\n
-          <td style="width: 410px;">\n      <h1>WAZUH Custom Report</h1></td>\n
+          <td style="width: 287px;"><img style="width: 150px; height: 150px;" alt="Wazuh Logo" src={}></td>\n
+          <td style="width: 410px;">\n      <h1>Report from {}</h1></td>\n
         </tr>\n
       </tbody>\n
     </table>\n
-    """.format(logo)
+    """.format(logo,html_title)
 
     body = body+header
 
     attachments = []
     for line in list:
+        timeframe = args.time[0]
         try:
-            arr_line = line.split(":")
-            vis_id = line.split(":")[0]
-            if len(arr_line) > 1:
-                timeframe = line.split(":")[1].strip()
-            else:
-                timeframe = "30"
+            if args.cdblist:
+                arr_line = line.strip().split(":")
+                vis_id = line.split(":")[0]
+                if arr_line[1]:
+                    timeframe = arr_line[1].strip()
+                else:
+                    timeframe = args.time[0]
+            if args.dashboard:
+                vis_id = line["id"]
             logging.info("Visualization parameters loaded for ID {} and timeframe {}".format(vis_id, timeframe))
         except Exception as e:
             logging.warning("Failed loading the visualization parameters, ignoring line")
@@ -276,16 +323,17 @@ if __name__ == "__main__":
         srch_res = search(aggs)
         json_tbl = create_table(vis,srch_res)
         graph, graph_cid = create_graph(json_tbl)
-        if vis["type"] == "pie":
-            tmp_attach = []
-            tmp_attach.append(graph_cid)
-            tmp_attach.append(os.path.join(start_dir, "pie.png"))
-            attachments.append(tmp_attach)
-        if vis["type"] == "histogram":
-            tmp_attach = []
-            tmp_attach.append(graph_cid)
-            tmp_attach.append(os.path.join(start_dir, "bar.png"))
-            attachments.append(tmp_attach)
+        if not ("error" in json_tbl):
+            if vis["type"] == "pie":
+                tmp_attach = []
+                tmp_attach.append(graph_cid)
+                tmp_attach.append(os.path.join(start_dir, "pie.png"))
+                attachments.append(tmp_attach)
+            if vis["type"] == "histogram":
+                tmp_attach = []
+                tmp_attach.append(graph_cid)
+                tmp_attach.append(os.path.join(start_dir, "bar.png"))
+                attachments.append(tmp_attach)
         body = body+graph+"\n<hr>\n"
     body = body+"</body>"
     logging.info("Report creation process complete")
@@ -294,7 +342,7 @@ if __name__ == "__main__":
     message = EmailMessage()
     message["To"] = rcpt
     message["From"] = sender
-    message["Subject"] = "Wazuh Custom Report"
+    message["Subject"] = "Wazuh Custom Report from: "+html_title
     message.set_content(body, 'html')
     for attach in attachments:
         fp = open(attach[1], 'rb')
