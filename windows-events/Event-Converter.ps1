@@ -71,7 +71,7 @@ function ToLogtest($xml_evt) {
     $json_evt['win']['eventData'] = @{}
     if ($nodes.Name) {
         foreach ($node in $nodes) {
-            $json_evt['win']['eventData'].Add(($node.Name).substring(0,1).tolower()+($node.Name).substring(1), $node.InnerText)
+            $json_evt['win']['eventData'].Add(($node.Name).replace(" ", "")).substring(0,1).tolower()+($node.Name).replace(" ", "")).substring(1), $node.InnerText)
         }
     }
     else {
@@ -91,7 +91,8 @@ if ($FilePath) {
     [xml]$xml_ini = $in_file[$ln_num..$in_file.Count]
     
     $sev_arr = ($in_file | Select-String -Pattern "Level:") -Split(":")
-    $sev = $sev_arr[1].Trim()
+    if ($sev_arr) {
+        $sev = $sev_arr[1].Trim()}
     $ln_from = ($in_file | Select-String -Pattern "Description:").LineNumber
     $msg = (($in_file[$ln_from..($ln_num-1)]) | Out-String)
 }
@@ -110,7 +111,7 @@ else {
 
 $json_fnl = ToLogtest($xml_ini)
 $json_fnl['win']['system'].Add('message',$msg)
-$json_fnl['win']['system'].Add('severityValue',$sev.ToUpper())
-
+if ($sev) {
+    $json_fnl['win']['system'].Add('severityValue',$sev.ToUpper()) }
 
 $json_fnl | ConvertTo-Json -Depth 10 -Compress
