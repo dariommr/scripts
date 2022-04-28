@@ -73,6 +73,7 @@ def get_vis(vis_id):
     try:
         result = requests.get(hook_url, auth=(user, passw), verify=False)
         data = json.loads(result.text)
+        #print(data)
         logging.info("Retrieved visualization information from Kibana successfully")
     except Exception as e:
         logging.error("Failed to retrieve visualization information: {}".format(e))
@@ -80,6 +81,10 @@ def get_vis(vis_id):
     try:
         query_config = json.loads(data["attributes"]["kibanaSavedObjectMeta"]["searchSourceJSON"])
         vis_configs = json.loads(data["attributes"]["visState"])
+        pattern = "wazuh-alerts-*"
+        for refer in data["references"]:
+            if refer["type"] == "index-pattern":
+                pattern = refer["id"]
         if len(query_config["filter"]) > 0:
             vis_configs["filter"] = {}
             for item in query_config["filter"]:
@@ -87,7 +92,7 @@ def get_vis(vis_id):
     except Exception as e:
         logging.error("Error. The visualization contains not supported configurations: {}".format(e))
         sys.exit(1)
-    return vis_configs
+    return vis_configs, pattern
 
 #Function to build the search query from the visualization parameters
 def build_aggs(vis_aggs,days):
@@ -132,8 +137,8 @@ def build_aggs(vis_aggs,days):
     return aggs_dict
 
 #Function to search in Elasticsearch
-def search(data_dict):
-    hook_url = "https://"+elastic_ip+":9200/_search"
+def search(data_dict,pattern):
+    hook_url = "https://"+elastic_ip+":9200/"+pattern+"/_search"
     headers = {'Content-Type': 'application/json'}
     data = json.dumps(data_dict)
     try:
@@ -316,9 +321,9 @@ if __name__ == "__main__":
         except Exception as e:
             logging.warning("Failed loading the visualization parameters, ignoring line")
             continue
-        vis = get_vis(vis_id)
+        vis, idx_pattern = get_vis(vis_id)
         aggs = build_aggs(vis,timeframe)
-        srch_res = search(aggs)
+        srch_res = search(aggs,idx_pattern)
         json_tbl = create_table(vis,srch_res)
         graph, graph_cid = create_graph(json_tbl)
         if not ("error" in json_tbl):
