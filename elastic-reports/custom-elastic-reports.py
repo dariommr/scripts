@@ -73,7 +73,6 @@ def get_vis(vis_id):
     try:
         result = requests.get(hook_url, auth=(user, passw), verify=False)
         data = json.loads(result.text)
-        #print(data)
         logging.info("Retrieved visualization information from Kibana successfully")
     except Exception as e:
         logging.error("Failed to retrieve visualization information: {}".format(e))
