@@ -131,7 +131,8 @@ if __name__ == "__main__":
                 send_event(json_event)
                 cant += 1
         logging.info("Finished collecting events. {} events sent to Wazuh Manager".format(cant))
-        last_file = open('defender-last-id', "w")
-        last_file.write(last_time)
+        if cant > 0:
+            last_file = open('defender-last-id', "w")
+            last_file.write(last_time)
     except Exception as e:
         logging.error("Error while retrieving Defender Security logs: {}.".format(e))
