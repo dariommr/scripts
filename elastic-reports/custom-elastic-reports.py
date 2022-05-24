@@ -25,7 +25,7 @@ import warnings
 
 start_dir = os.path.dirname(os.path.realpath(__file__))
 wazuh_dir = "/var/ossec/"
-logo = "https://demo.wazuh.com/ui/wazuh_logo_circle.svg"
+logo = "https://wazuh.com/assets/wazuh-signature.png"
 
 # Configuring logger
 def set_logger(name, logfile=None):
