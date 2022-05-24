@@ -11,7 +11,9 @@ import argparse
 import logging
 import requests
 import json
-import urllib3
+import warnings
+warnings.filterwarnings("ignore")
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import os, sys
@@ -19,8 +21,8 @@ import xml.etree.ElementTree as ET
 import smtplib
 from email.message import EmailMessage
 from email.utils import make_msgid
+import warnings
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 start_dir = os.path.dirname(os.path.realpath(__file__))
 wazuh_dir = "/var/ossec/"
 logo = "https://demo.wazuh.com/ui/wazuh_logo_circle.svg"
@@ -80,14 +82,21 @@ def get_vis(vis_id):
     try:
         query_config = json.loads(data["attributes"]["kibanaSavedObjectMeta"]["searchSourceJSON"])
         vis_configs = json.loads(data["attributes"]["visState"])
-        pattern = "wazuh-alerts-*"
         for refer in data["references"]:
             if refer["type"] == "index-pattern":
                 pattern = refer["id"]
         if len(query_config["filter"]) > 0:
-            vis_configs["filter"] = {}
+            vis_configs["filter"] = []
+            vis_configs["must_not"] = []
             for item in query_config["filter"]:
-                vis_configs["filter"].update(item["query"])
+                if item["meta"]["type"] == "phrase":
+                    it_query = item["query"]
+                if item["meta"]["type"] == "exists":
+                    it_query = {"exists":{"field":item["meta"]["key"]}}
+                if item["meta"]["negate"]:
+                    vis_configs["must_not"].append(it_query)
+                else:
+                    vis_configs["filter"].append(it_query)
     except Exception as e:
         logging.error("Error. The visualization contains not supported configurations: {}".format(e))
         sys.exit(1)
@@ -128,10 +137,12 @@ def build_aggs(vis_aggs,days):
             aggs_dict["aggs"][id]["aggs"].update(inner_agg)
     gte = "now-"+days+"d/d"
     srch_range = {"range":{"timestamp":{"gte":gte,"lte":"now/d","format":"strict_date_optional_time"}}}
-    tmp_dict = {"query": {"bool": {"filter": []}}}
+    tmp_dict = {"query": {"bool": {"filter": [], "must_not": []}}}
     tmp_dict["query"]["bool"]["filter"].append(srch_range)
     if "filter" in vis_aggs:
-        tmp_dict["query"]["bool"]["filter"].append(vis_aggs["filter"])
+        tmp_dict["query"]["bool"]["filter"] += vis_aggs["filter"]
+    if "must_not" in vis_aggs:
+        tmp_dict["query"]["bool"]["must_not"] += vis_aggs["must_not"]
     aggs_dict.update(tmp_dict)
     return aggs_dict
 
