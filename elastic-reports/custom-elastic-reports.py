@@ -63,7 +63,10 @@ def get_dash(dash_tit):
         result = requests.get(hook_url, auth=(user, passw), verify=False)
         data = json.loads(result.text)
         logging.info("Retrieved information from Kibana Dashboard {} successfully".format(dash_tit))
-        list = data["saved_objects"][0]["references"]
+        if data["total"] == 0:
+            raise Exception("No dashboard "+dash_tit)
+        else:
+            list = data["saved_objects"][0]["references"]
     except Exception as e:
         logging.error("Failed to retrieve dashboard information: {}".format(e))
         sys.exit(1)
@@ -75,7 +78,10 @@ def get_vis(vis_id):
     try:
         result = requests.get(hook_url, auth=(user, passw), verify=False)
         data = json.loads(result.text)
-        logging.info("Retrieved visualization information from Kibana successfully")
+        if "error" in data:
+            raise Exception("("+str(data["statusCode"])+") "+data["message"])
+        else:
+            logging.info("Retrieved visualization information from Kibana successfully")
     except Exception as e:
         logging.error("Failed to retrieve visualization information: {}".format(e))
         sys.exit(1)
@@ -155,6 +161,9 @@ def search(data_dict,pattern):
         json_result = requests.get(hook_url, auth=(user, passw), verify=False, headers=headers, data=data)
         result = json.loads(json_result.text)
         logging.info("Search executed in Elasticsearch server successfully")
+        if "error" in result:
+            res_error = result["error"]["caused_by"]
+            raise Exception(res_error["type"]+": "+res_error["reason"])
     except Exception as e:
         logging.error("Failed to execute search in Elasticsearch server: {}".format(e))
         sys.exit(1)
