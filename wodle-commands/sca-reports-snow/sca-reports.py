@@ -48,7 +48,8 @@ def get_token():
         else:
             raise Exception(request_result.json())
     except Exception as e:
-        logging.error("Error obtaining the Token: {}".format(e))
+        exc = sys.exc_info()
+        logging.error("Error obtaining the Token: [{}] {}".format(exc[2].tb_lineno, e))
         sys.exit(1)
     
     return TOKEN
@@ -90,7 +91,8 @@ def get_data(url, token, endpoint):
             else:
                 finish = True
     except Exception as e:
-        logging.error("Error obtaining data from endpoint: {}".format(e))
+        exc = sys.exc_info()
+        logging.error("Error obtaining data from endpoint: [{}] {}".format(exc[2].tb_lineno, e))
         sys.exit(1)
 
     return items
@@ -99,7 +101,8 @@ def create_ticket(agent, sca_result):
     # Create SNOW ticket
     SNOW_HEADERS = {'Content-type': 'application/json'}
     SNOW_PAYLOAD["cmdb_ci"] = agent
-    SNOW_PAYLOAD["description"] += "\n".join(sca_result)
+    SNOW_PAYLOAD["description"] = "{}\n {}".format(SNOW_DESC, sca_result)
+    SNOW_PAYLOAD["short_description"] = "[{}] {}".format(agent, SNOW_SHDESC)
 
     # Make request to SNOW API
     try:
@@ -107,7 +110,8 @@ def create_ticket(agent, sca_result):
         if snow_request.status_code != 201:
             raise Exception("Code {} - {}".format(snow_request.status_code, snow_request.text))
     except Exception as e:
-        logging.error("Error creating the ticket in the SNOW Service: {}. {}".format(SNOW_URL, e))
+        exc = sys.exc_info()
+        logging.error("Error creating the ticket in the SNOW Service: [{}] {}".format(exc[2].tb_lineno, e))
         sys.exit(1)
     
     return json.loads(snow_request.text)
@@ -122,7 +126,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     DEBUG = args.debug
-    set_logger("sca-reports", "sca-reports.log")
+    set_logger("sca-reports", "logs/sca-reports.log")
 
     logging.info("Starting the SCA Reports Tools")
     # Loading the configuration file
@@ -139,9 +143,12 @@ if __name__ == "__main__":
         SNOW_PASS = cfg_dict['snow']['password']
         SNOW_URL = cfg_dict['snow']['url']
         SNOW_PAYLOAD = cfg_dict['snow']['payload']
+        SNOW_SHDESC = cfg_dict['snow']['payload']['short_description']
+        SNOW_DESC = cfg_dict['snow']['payload']['description']
         logging.info("Configuration file loaded correctly")
     except Exception as e:
-        logging.error("Error obtaining settings from config file: {}".format(e))
+        exc = sys.exc_info()
+        logging.error("Error obtaining settings from config file: [{}] {}".format(exc[2].tb_lineno, e))
         sys.exit(1)
     
     # Obtaining de data
@@ -165,7 +172,8 @@ if __name__ == "__main__":
             report_items.append(agent_data)
         logging.info("Data collected for {} Agents".format(len(report_items)))
     except Exception as e:
-        logging.error("Error collecting data from SCA for the active agents: {}".format(e))
+        exc = sys.exc_info()
+        logging.error("Error collecting data from SCA for the active agents: [{}] {}".format(exc[2].tb_lineno, e))
         sys.exit(1)
     
     #Building the Report
@@ -187,5 +195,3 @@ if __name__ == "__main__":
                 logging.info("SNOW Ticket created. Response: {}".format(resp["result"]["number"]))
     
     logging.info("SCA Reports tool finished successfully")
-
-        
