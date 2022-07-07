@@ -14,6 +14,7 @@ from socket import socket, AF_UNIX, SOCK_DGRAM
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 manager_ip = "localhost"
 socketAddr = '/var/ossec/queue/sockets/queue'
+creds_location = "/var/ossec/etc/gi-pass.conf"
 
 # Send message to socket
 def send_event(msg):
@@ -40,7 +41,7 @@ def set_logger(name, logfile=None):
         logging.getLogger('').addHandler(console)
 
 # Function to get the Wazuh API Token
-def get_token(user="wazuh", passw="wazuh"):
+def get_token(user, passw):
     logging.info("Obtaining the Wazuh API token")
     hook_url = "https://"+manager_ip+":55000/security/user/authenticate?raw=true"
     try:
@@ -99,7 +100,11 @@ if __name__ == "__main__":
 
     # Parsing the groups
     groups = args.group
-    api_token = get_token("wazuh", "wazuh")
+    creds_file = open(creds_location, "r")
+    creds = json.loads(creds_file.read())
+    wuser = creds["username"]
+    wpass = creds["password"]
+    api_token = get_token(wuser, wpass)
     dict_grp = get_groups(api_token)
     tmp_grp = []
     for item in dict_grp["data"]["affected_items"]:
@@ -136,15 +141,16 @@ if __name__ == "__main__":
         for agent in agents["data"]["affected_items"]:
             for end_itm in endpoints:
                 inventory = get_inventory(api_token, agent["id"], end_itm)
+                print(inventory)
                 for itm in inventory["data"]["affected_items"]:
                     tmp = {}
                     tmp["inventory"] = {}
                     itm["group"] = group_name
                     itm["endpoint"] = end_itm
+                    tmp["inventory"] = itm
                     itm["agent_name"] = agent["name"]
                     itm["agent_ip"] = agent["ip"]
                     itm["agent_version"] = agent["version"]
-                    tmp["inventory"] = itm
                     json_msg = json.dumps(tmp, default=str)
                     send_event(json_msg)
     logging.info("Finished getting the inventory for the groups of agents")
