@@ -8,6 +8,7 @@
 # Foundation.
 
 import os, sys
+import time
 import logging
 import requests
 import json
@@ -72,6 +73,11 @@ def get_data(url, token, endpoint):
             endpoint = re.sub('limit=\d+', 'limit={}'.format(limit), endpoint)
             endpoint = re.sub('offset=\d+', 'offset={}'.format(offset), endpoint)
             response = requests.get("{}{}".format(url, endpoint), headers=headers, verify=False)
+            while response.status_code == 429:
+                delay = 15
+                logging.warning("Too many requests, delaying the request for {} seconds".format(str(delay)))
+                time.sleep(15)
+                response = requests.get("{}{}".format(url, endpoint), headers=headers, verify=False)
             if response.status_code == 401:
                 logging.debug("Token expired, requesting new token")
                 token = get_token()
@@ -80,7 +86,7 @@ def get_data(url, token, endpoint):
                 data = json.loads(response.text)
                 logging.debug("Total affected items: {}".format(len(data["data"]['affected_items'])))
             else:
-                raise Exception(response.json())
+                raise Exception("Code [{}] - {}".format(response.status_code, response.json()))
             items += data["data"]['affected_items']
             next_group = limit + offset
             affected = int(data["data"]['total_affected_items'])
