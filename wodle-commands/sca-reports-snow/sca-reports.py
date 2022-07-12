@@ -47,7 +47,7 @@ def get_token():
             TOKEN = json.loads(request_result.content.decode())['data']['token']
             logging.debug("Wazuh Token obtained: {}".format(TOKEN))
         else:
-            raise Exception(request_result.json())
+            raise Exception("Code [{}] - {}".format(request_result.status_code, request_result.json()))
     except Exception as e:
         exc = sys.exc_info()
         logging.error("Error obtaining the Token: [{}] {}".format(exc[2].tb_lineno, e))
