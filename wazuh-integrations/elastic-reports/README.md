@@ -1,6 +1,6 @@
 ## Update
-03/02/2022 - Added the function to extract the visualizations from a dashboard.
-07/22/2022 - Added the more filtering options like DQL single query and "is one of".
+- 03/02/2022 - Added the function to extract the visualizations from a dashboard.
+- 07/22/2022 - Added the more filtering options like DQL single query and "is one of".
 
 ## Documentation
 
