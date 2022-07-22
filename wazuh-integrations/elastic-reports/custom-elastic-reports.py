@@ -23,26 +23,29 @@ from email.message import EmailMessage
 from email.utils import make_msgid
 import warnings
 
+DEBUG = False
 start_dir = os.path.dirname(os.path.realpath(__file__))
 wazuh_dir = "/var/ossec/"
 logo = "https://wazuh.com/assets/wazuh-signature.png"
 
-# Configuring logger
+# Enables logging and configure it
 def set_logger(name, logfile=None):
     hostname = os.uname()[1]
-
     format = '%(asctime)s {0} {1}: [%(levelname)s] %(message)s'.format(hostname, name)
+    formatter = logging.Formatter(format)
+    if DEBUG:
+        logging.getLogger('').setLevel(logging.DEBUG)
+    else:
+        logging.getLogger('').setLevel(logging.INFO)
 
-    logging.basicConfig(level=logging.INFO, format=format, datefmt="%Y-%m-%d %H:%M:%S", filename=logfile)
-
-    #print logging.Logger.manager.loggerDict
-
+    streamHandler = logging.StreamHandler(sys.stdout)
+    streamHandler.setFormatter(formatter)
+    logging.getLogger('').addHandler(streamHandler)
+    
     if logfile:
-        console = logging.StreamHandler()
-        console.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(format, datefmt="%Y-%m-%d %H:%M:%S")
-        console.setFormatter(formatter)
-        logging.getLogger('').addHandler(console)
+        fileHandler = logging.FileHandler(logfile)
+        fileHandler.setFormatter(formatter)
+        logging.getLogger('').addHandler(fileHandler)
 
 # Function to send emails
 def send_email(TO, SERVER, MESSAGE):
@@ -91,12 +94,18 @@ def get_vis(vis_id):
         for refer in data["references"]:
             if refer["type"] == "index-pattern":
                 pattern = refer["id"]
+        vis_configs["filter"] = []
+        if query_config["query"]["query"] != "":
+            q_query = { 'multi_match': { 'type': 'best_fields', 'query': query_config["query"]["query"], 'lenient': 'true' } }
+            vis_configs["filter"].append(q_query)
         if len(query_config["filter"]) > 0:
-            vis_configs["filter"] = []
             vis_configs["must_not"] = []
+            vis_configs["query"] = []
             for item in query_config["filter"]:
                 if item["meta"]["type"] == "phrase":
                     it_query = item["query"]
+                if item["meta"]["type"] == "phrases":
+                    vis_configs["query"] = item["query"]["bool"]
                 if item["meta"]["type"] == "exists":
                     it_query = {"exists":{"field":item["meta"]["key"]}}
                 if item["meta"]["negate"]:
@@ -149,6 +158,9 @@ def build_aggs(vis_aggs,days):
         tmp_dict["query"]["bool"]["filter"] += vis_aggs["filter"]
     if "must_not" in vis_aggs:
         tmp_dict["query"]["bool"]["must_not"] += vis_aggs["must_not"]
+    if "query" in vis_aggs:
+        for key in vis_aggs["query"]:
+            tmp_dict["query"]["bool"][key] = vis_aggs["query"][key]
     aggs_dict.update(tmp_dict)
     return aggs_dict
 
@@ -160,10 +172,10 @@ def search(data_dict,pattern):
     try:
         json_result = requests.get(hook_url, auth=(user, passw), verify=False, headers=headers, data=data)
         result = json.loads(json_result.text)
-        logging.info("Search executed in Elasticsearch server successfully")
         if "error" in result:
             res_error = result["error"]["caused_by"]
             raise Exception(res_error["type"]+": "+res_error["reason"])
+        logging.info("Search executed in Elasticsearch server successfully")
     except Exception as e:
         logging.error("Failed to execute search in Elasticsearch server: {}".format(e))
         sys.exit(1)
@@ -287,7 +299,11 @@ if __name__ == "__main__":
     smtp = args.smtp[0]
     sender = args.sender[0]
     rcpt = args.to
-    set_logger("custom-elastic-reports", os.path.join(wazuh_dir, "logs/integrations.log"))
+    if os.path.isfile(os.path.join(wazuh_dir, "logs/integrations.log")):
+        logfile_loc = os.path.join(wazuh_dir, "logs/integrations.log")
+    else:
+        logfile_loc = "integrations.log"
+    set_logger("custom-elastic-reports", logfile_loc)
     
     logging.info("------- Starting the Reporting Tool -------")
     logging.info("Parameters loaded successfully")
