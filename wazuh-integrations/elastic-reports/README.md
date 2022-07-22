@@ -139,6 +139,9 @@ options:
   Para extraer dichos IDs, se debe verificar la visualizacion creada, por ejemplo:
   ![image](https://user-images.githubusercontent.com/37050249/149815309-893b4249-f16e-4b38-be62-10f2157d516a.png)
 
+  ### Usar un dashboard
+  Se pueden crear dashboards personalizados (teniendo en cuenta los limites del the script descriptos en la sección Introducción) que contenga todas las visualizaciones. Se debe tomar nota del nombre del dashboard que se ha creado para luego utilizarlo como parametro en el script.
+  
   ### Otorgar permisos
   Otorgar permisos de ejecucion y ajustar el ownership:
   ```
@@ -150,31 +153,34 @@ options:
   ### Ejecutar el Script
   El script se puede ejecutar de manera manual, o mediante un wodle command, los parametros son los siguientes:
   ```
-  # python custom-elastic-reports -h
+ $ python custom-elastic-reports.py --help
   usage: custom-elastic-reports.py [-h] --creds CREDS [CREDS ...] --elk-server ELK_SERVER [ELK_SERVER ...] [--kbn-server KBN_SERVER [KBN_SERVER ...]] --smtp SMTP [SMTP ...] --sender SENDER
-                                   [SENDER ...] --to TO [TO ...] --cdblist CDBLIST [CDBLIST ...]
+                                 [SENDER ...] --to TO [TO ...] [--dashboard DASHBOARD | --cdblist CDBLIST] --time TIME [TIME ...]
 
-  Create email Reports from custom visualizations in Kibana
+Create email Reports from custom visualizations in Kibana
 
-  options:
-    -h, --help            show this help message and exit
-    --creds CREDS [CREDS ...]
-                          Elasticsearch credentials (user:password)
-    --elk-server ELK_SERVER [ELK_SERVER ...]
-                          Elasticsearch server address
-    --kbn-server KBN_SERVER [KBN_SERVER ...]
-                          Kibana server address
-    --smtp SMTP [SMTP ...]
-                          SMTP Server address
-    --sender SENDER [SENDER ...]
-                          Sender email address
-    --to TO [TO ...]      Recipient email address
-    --cdblist CDBLIST [CDBLIST ...]
-                          Name of the CDBList used to get the visualizations
+options:
+  -h, --help            show this help message and exit
+  --creds CREDS [CREDS ...]
+                        Elasticsearch credentials (user:password)
+  --elk-server ELK_SERVER [ELK_SERVER ...]
+                        Elasticsearch server address
+  --kbn-server KBN_SERVER [KBN_SERVER ...]
+                        Kibana server address
+  --smtp SMTP [SMTP ...]
+                        SMTP Server address
+  --sender SENDER [SENDER ...]
+                        Sender email address
+  --to TO [TO ...]      Recipient email address
+  --dashboard DASHBOARD
+                        Name of the dashboard containing the visualizations. Can not use --cdblist with this option
+  --cdblist CDBLIST     Name of the cdb list containing the visualizations. Can not use --dashboard with this option
+  --time TIME [TIME ...]
+                        Filter the visualizations for last N days
   ```
-  Como un ejemplo:
+  Un ejemplo:
   ```
-  /var/ossec/integrations/custom-elastic-reports --to destino@wazuh.com --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender origen@wazuh.com --creds admin:admin --cdblist report-list
+  python custom-elastic-reports.py --creds admin:admin --elk-server 10.10.10.220 --smtp 10.10.10.90 --sender sender@gmail.com --to recipient@gmail.com  --dashboard "Basic Dashboard" --time 180 days
   ```
   No es necesario especificar el servidor de Kibana, si no se especifica, toma como servidor de Kibana el mismo Elasticsearch server.
 
