@@ -12,7 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 ################################################## Global variables ##################################################
 
-alert_file = open(sys.argv[1])
+alert_file = open(sys.argv[1], encoding='latin-1')
 user = sys.argv[2].split(":")[0]
 password = sys.argv[2].split(":")[1]
 hook_url = sys.argv[3]          #https://<domain>/api/now/table
@@ -217,7 +217,7 @@ if __name__ == "__main__":
                 logging.debug("Alert present in filter2")
     if not present_in_filter1 and not present_in_filter2:
         logging.info("The alert {} is not present on any filter, discarding".format(alert_id))
-        sys.exit(1)
+        sys.exit(0)
 
     try:
         logging.debug("Preparing the payload")
