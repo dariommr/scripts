@@ -1,42 +1,88 @@
-#!/usr/bin/env python
-import sys
-import json
-import requests
-from requests.auth import HTTPBasicAuth
+#!/bin/python3
 
-# Read configuration parameters
+import os
+import json
+import sys
+import logging
+import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+################################################## Global variables ##################################################
+
 alert_file = open(sys.argv[1])
 api_key = sys.argv[2]
 hook_url = sys.argv[3]
-
-# Read the alert file
 alert_json = json.loads(alert_file.read())
 alert_file.close()
 
-# Extracting some information from the alert
-alert_id = alert_json['id']
-rule_id = alert_json['rule']['id']
-rule_level = alert_json['rule']['level']
-rule_desc = alert_json['rule']['description']
-rule_groups = alert_json['rule']['groups']
-agent_name = alert_json['agent']['name']
-manager_name = alert_json['manager']['name']
-location = alert_json['location']
+log_file = "/var/ossec/logs/integrations.log"
+DEBUG = False
 
-# Building the request.
-body = {}
-body['title'] = rule_desc
-body['description'] = "An alert with rule id "+str(rule_id)+" and level "+str(rule_level)+" has been triggered"
-body['type'] = "external"
-body['source'] = manager_name
-body['sourceRef'] = "id: "+alert_id
-body['tags'] = rule_groups
-body['severity'] = 3
-body['tlp'] = 3
-headers = {'content-type': 'application/json', 'Authorization': 'Bearer '+api_key }
+################################################## Common functions ##################################################
 
-# Executing the request
-response = requests.post(hook_url, data=json.dumps(body), headers=headers)
-print(response.text)
+# Enables logging and configure it
+def set_logger(name, logfile=None):
+    hostname = os.uname()[1]
+    format = '%(asctime)s {0} {1}: [%(levelname)s] %(message)s'.format(hostname, name)
+    formatter = logging.Formatter(format)
+    if DEBUG:
+        logging.getLogger('').setLevel(logging.DEBUG)
+    else:
+        logging.getLogger('').setLevel(logging.INFO)
 
-sys.exit(0)
+    streamHandler = logging.StreamHandler(sys.stdout)
+    streamHandler.setFormatter(formatter)
+    logging.getLogger('').addHandler(streamHandler)
+    
+    if logfile:
+        fileHandler = logging.FileHandler(logfile)
+        fileHandler.setFormatter(formatter)
+        logging.getLogger('').addHandler(fileHandler)
+
+# Write the body of the TheHive Alert
+def build_alert(wazuh_alert):
+    try:
+        description = "An alert with rule id "+str(wazuh_alert['rule']['id'])+" and level "+str(wazuh_alert['rule']['level'])+" has been triggered"
+        severity = wazuh_alert['rule']['level'] // 4
+        if severity < 1:
+            severity = 1
+        alert = {   "title": wazuh_alert['rule']['description'],
+                    "description": description,
+                    "type": "external",
+                    "source": wazuh_alert['manager']['name'],
+                    "sourceRef": "id: {}".format(wazuh_alert['id']),
+                    "tags": wazuh_alert['rule']['groups'],
+                    "severity": severity,
+                    "tlp": severity - 1}
+    except Exception as e:
+        exc = sys.exc_info()
+        logging.error("Error while writing the alert: [{}] {}".format(exc[2].tb_lineno, e))
+        sys.exit(1)
+    return alert
+
+def send_thehive(url, api, msg):
+    headers = {     "content-type": "application/json", 
+                    "Authorization": "Bearer {}".format(api) }
+    data = json.dumps(msg)
+    try:
+        logging.debug("Sending alert {}.".format(data))
+        result = requests.post(url, data=data, headers=headers)
+        if result.status_code != 201:
+            raise Exception("Code {} - {}".format(result.status_code, result.text))
+    except Exception as e:
+        exc = sys.exc_info()
+        logging.error("Error while contacting TheHive: [{}] {}".format(exc[2].tb_lineno, e))
+        sys.exit(1)
+    return result.text
+
+################################################## Main Workflow ##################################################
+if __name__ == "__main__":
+    set_logger("thehive-integration", log_file)
+    
+    logging.debug("Starting TheHive Integration")
+    body = build_alert(alert_json)
+    logging.debug("Alert building process completed successfully: {}".format(body))
+    response = send_thehive(hook_url, api_key, body)
+    resp_dict = json.loads(response)
+    logging.info("Alert sent to TheHive server. Response ID: {}".format(resp_dict["id"]))
