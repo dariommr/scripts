@@ -138,7 +138,13 @@ def create_body(in_alert):
         description_added = True
     if not description_added:
         str_body = str_body+"<br><h2>Full Alert</h2>\n"
-        str_body = str_body+json.dumps(in_alert["data"], indent=4, sort_keys=True)
+        if "full_log" in in_alert:
+            str_body = str_body+in_alert["full_log"]
+        else:
+            if "data" in in_alert:
+                str_body = str_body+json.dumps(in_alert["data"], indent=4, sort_keys=True)
+            else:
+                str_body = str_body+json.dumps(in_alert, indent=4, sort_keys=True)
     return str_body
 
 # Function to send the email alert through smtp.
