@@ -49,6 +49,7 @@ import traceback
 import ssl
 import urllib3
 import zlib
+import unicodedata
 from logging import handlers
 from socket import socket, AF_UNIX, SOCK_DGRAM
 
@@ -301,8 +302,11 @@ class LogsDownloader:
         
         if self.config.WAZUH_SOCKET == "YES":
             cant = 0
-            for line in decrypted_file:
-                self.send_socket(self, line)
+            arr_lines = decrypted_file.split("\n")
+            for line in arr_lines:
+                line_encode_ascii = unicodedata.normalize('NFKD', line).encode('ascii', 'ignore')
+                line_decode_utf8 = line_encode_ascii.decode('utf-8').strip()
+                self.send_socket(line_decode_utf8)
                 cant += 1
             self.logger.info('Sent {} messages to Wazuh socket.'.format(cant))
 
