@@ -33,3 +33,4 @@ thehive:
 ```
 
 ## Screenshots
+![image](https://user-images.githubusercontent.com/37050249/196460401-98efcee3-a711-4288-9d4e-7d4b6a5980f1.png)
