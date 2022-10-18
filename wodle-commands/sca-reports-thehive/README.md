@@ -33,3 +33,11 @@ thehive:
   url: "http://<THEHIVE_IP>:9000/api/v1/case"
   api_key: "<API_KEY>"
 ```
+
+<details>
+<summary>Screenshots</summary>
+<br>
+
+  ![image](https://user-images.githubusercontent.com/37050249/196461754-c913acb3-9ee1-415d-b2f7-08dc884158cd.png)
+
+</details>
