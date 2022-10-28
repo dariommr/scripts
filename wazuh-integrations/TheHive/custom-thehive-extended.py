@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/var/ossec/framework/python/bin/python3
 
 import os
 import json
