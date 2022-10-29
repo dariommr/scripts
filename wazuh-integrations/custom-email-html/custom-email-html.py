@@ -159,7 +159,7 @@ def sendemail(FROM,TO,SERVER,in_alert,creds=None):
         part = MIMEText(msg_body, "html")
         msg.attach(part)
         if len(SERVER) == 1:
-            server = smtplib.SMTP(SERVER[0], 30025)
+            server = smtplib.SMTP(SERVER[0], 25)
             server.ehlo_or_helo_if_needed()
             result = server.sendmail(FROM, TO, msg.as_string())
         else:
@@ -173,6 +173,7 @@ def sendemail(FROM,TO,SERVER,in_alert,creds=None):
         exc = sys.exc_info()
         logging.error("Failed to send mail to {} detail: [{}] {}".format(TO, exc[2].tb_lineno, e))
         sys.exit(1)
+    return result
 
 ################################################## Main Workflow ##################################################
 if __name__ == "__main__":
