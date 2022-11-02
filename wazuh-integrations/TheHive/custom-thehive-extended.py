@@ -95,9 +95,9 @@ def build_alert(wazuh_alert):
         if not description_added:
             description += "\r\n```\n{}\r\n\r\n```".format(json.dumps(wazuh_alert["data"], indent=4, sort_keys=True))
         wazuh_alert['rule']['groups'].append("wazuh")
-        custom_fields = {   "wazuh_manager": wazuh_alert["manager"]["name"],
-                            "wazuh_agent": wazuh_alert["agent"]["name"],
-                            "alert_timestamp": wazuh_alert["timestamp"]}
+        #custom_fields = {   "wazuh_manager": wazuh_alert["manager"]["name"],
+        #                    "wazuh_agent": wazuh_alert["agent"]["name"],
+        #                    "alert_timestamp": wazuh_alert["timestamp"]}
         # To use custom fields, make sure you have them defined at the organization level. Then add the dict key and value: <"customFields": custom_fields>
         # Documentation: https://docs.thehive-project.org/thehive/user-guides/administrators/custom-fields/
         alert = {   "title": wazuh_alert['rule']['description'],
@@ -107,8 +107,8 @@ def build_alert(wazuh_alert):
                     "sourceRef": "id: {}".format(wazuh_alert['id']),
                     "tags": wazuh_alert['rule']['groups'],
                     "severity": severity,
-                    "tlp": severity - 1,
-                    "customFields": custom_fields}
+                    "tlp": severity - 1} #,
+        #            "customFields": custom_fields}
     except Exception as e:
         exc = sys.exc_info()
         logging.error("Error while writing the alert: [{}] {}".format(exc[2].tb_lineno, e))
@@ -121,7 +121,7 @@ def send_thehive(url, api, msg):
     data = json.dumps(msg)
     try:
         logging.debug("Sending alert {}.".format(data))
-        result = requests.post(url, data=data, headers=headers)
+        result = requests.post(url, data=data, headers=headers, verify=False)
         if result.status_code != 201:
             raise Exception("Code {} - {}".format(result.status_code, result.text))
     except Exception as e:
