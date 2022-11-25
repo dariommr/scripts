@@ -1,7 +1,7 @@
 @ECHO OFF
 
 powershell -executionpolicy ByPass ^
-    $log_file = 'active-responses.log'; ^
+    $log_file = 'C:\Program Files (x86)\ossec-agent\active-response\active-responses.log'; ^
     $alert = Read-Host; ^
     $alert_dict = ConvertFrom-Json $alert; ^
     $alert_id = $alert_dict.parameters.alert.id; ^
