@@ -6,7 +6,7 @@ powershell -executionpolicy ByPass ^
     $alert_dict = ConvertFrom-Json $alert; ^
     $alert_id = $alert_dict.parameters.alert.id; ^
     $log_line = (Get-Date).ToString('yyyy-MM-dd hh:mm:ss')+' active-response/bin/remove-file-fim.cmd: Starting with Alert ID '+$alert_id; ^
-    Add-Content -Path $log_file -Value $log_line; ^
+    $log_line ^| Out-File -FilePath $log_file -Append -Encoding ASCII; ^
     $filename = $alert_dict.parameters.alert.syscheck.path; ^
     $filesize = $alert_dict.parameters.alert.syscheck.size_after; ^
     $filehash = $alert_dict.parameters.alert.syscheck.md5_after; ^
@@ -17,8 +17,8 @@ powershell -executionpolicy ByPass ^
             Remove-Item -Path $hash.Path -ErrorVariable result -ErrorAction SilentlyContinue; ^
             $log_line = (Get-Date).ToString('yyyy-MM-dd hh:mm:ss')+' active-response/bin/remove-file-fim.cmd: '; ^
             if ($result.Count -eq 0) {$log_line += $hash.Path+' deleted'} else {$log_line += 'Unable to delete. Reason: '+$result[0].CategoryInfo.Reason}} ^
-            Add-Content -Path $log_file -Value $log_line}; ^
+            $log_line ^| Out-File -FilePath $log_file -Append -Encoding ASCII}; ^
     $log_line = (Get-Date).ToString('yyyy-MM-dd hh:mm:ss')+' active-response/bin/remove-file-fim.cmd: Ended'; ^
-    Add-Content -Path $log_file -Value $log_line
+    $log_line ^| Out-File -FilePath $log_file -Append -Encoding ASCII
 
 :Exit
