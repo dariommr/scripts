@@ -1,8 +1,9 @@
 @ECHO OFF
 
 powershell -executionpolicy ByPass ^
+    $allowedHosts = '<WAZUH_MANAGER_IP>', '<ANOTHER_IP>'; ^
     $def_gate = (Get-NetRoute ^| where {$_.DestinationPrefix -eq '0.0.0.0/0'}).NextHop; ^
-    $allowedHosts = $def_gate, '<WAZUH_MANAGER_IP>', '<ANOTHER_IP>'; ^
+    $allowedHosts += $def_gate; ^
     Write-Host $allowedHosts; ^
     $user_msg = 'El equipo ha entrado en modo contencion y ha sido aislado. Favor de comunicarse con el administrador'; ^
     $log_file = 'C:\Program Files (x86)\ossec-agent\active-response\active-responses.log'; ^
@@ -51,10 +52,10 @@ powershell -executionpolicy ByPass ^
             $null = New-NetFirewallRule -Direction Inbound -Enabled:True -Action Allow -RemoteAddress $allowedHosts -DisplayName $ruleName; ^
             Get-NetFirewallProfile ^| Set-NetFirewallProfile -DefaultInboundAction Block}; ^
         Write-Log 'Firewall Isolation rules created'; ^
-        Stop-Service -name 'Workstation' -Force; ^
-        Get-Service -name 'Workstation' ^| Set-Service -StartupType Disabled; ^
-        Stop-Service -name 'Server' -Force; ^
-        Get-Service -name 'Server' ^| Set-Service -StartupType Disabled; ^
+        Stop-Service -name 'LanmanWorkstation' -Force; ^
+        Get-Service -name 'LanmanWorkstation' ^| Set-Service -StartupType Disabled; ^
+        Stop-Service -name 'LanmanServer' -Force; ^
+        Get-Service -name 'LanmanServer' ^| Set-Service -StartupType Disabled; ^
         msg * $user_msg; ^
         Write-Log 'Services Workstation and Server Stopped and Disabled'} ^
     else { ^
@@ -67,10 +68,10 @@ powershell -executionpolicy ByPass ^
         Remove-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue; ^
         Get-NetFirewallProfile ^| Set-NetFirewallProfile -DefaultInboundAction Allow; ^
         Write-Log 'Firewall Isolation rules deleted'; ^
-        Get-Service -name 'Workstation' ^| Set-Service -StartupType Automatic; ^
-        Start-Service -name 'Workstation'; ^
-        Get-Service -name 'Server' ^| Set-Service -StartupType Automatic; ^
-        Start-Service -name 'Server'; ^
+        Get-Service -name 'LanmanWorkstation' ^| Set-Service -StartupType Automatic; ^
+        Start-Service -name 'LanmanWorkstation'; ^
+        Get-Service -name 'LanmanServer' ^| Set-Service -StartupType Automatic; ^
+        Start-Service -name 'LanmanServer'; ^
         Write-Log 'Services Workstation and Server Enabled and Started'}; ^
     Write-Log 'Ended'
 
