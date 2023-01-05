@@ -4,7 +4,6 @@ powershell -executionpolicy ByPass ^
     $allowedHosts = '<WAZUH_MANAGER_IP>', '<ANOTHER_IP>'; ^
     $def_gate = (Get-NetRoute ^| where {$_.DestinationPrefix -eq '0.0.0.0/0'}).NextHop; ^
     $allowedHosts += $def_gate; ^
-    Write-Host $allowedHosts; ^
     $user_msg = 'El equipo ha entrado en modo contencion y ha sido aislado. Favor de comunicarse con el administrador'; ^
     $log_file = 'C:\Program Files (x86)\ossec-agent\active-response\active-responses.log'; ^
     $ar_name = 'win-isolation'; ^
