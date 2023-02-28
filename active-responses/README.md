@@ -11,7 +11,7 @@ This active response script is meant to be executed on-demand through an API cal
 ```
 PUT /active-response?agents_list=<AGENT-ID>
 {
-  "command": "!win-isolation.cmd",
+  "command": "!remove-file-vt.cmd",
   "arguments": [<"add"> or <"delete">],
   "custom": true,
   "alert": {
