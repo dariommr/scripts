@@ -1,0 +1,16 @@
+connection:
+  wazuh:
+    indexerIp: <INDEXER_IP>:<PORT>
+    dashboardIp: <DASHBOARD_IP>
+    username: <INDEXER_USER>
+    password: <INDEXER_PASS>
+  sql:
+    DSN: <ODBC_DSN>
+    username: <SQL_USER>
+    password: <SQL_PASSWORD>
+    database: <SQL_DATABASE>
+
+columns:
+  - <INDEXER_COLUMN1_NAME>: <SQL_COLUMN1_NAME>
+  - <INDEXER_COLUMN2_NAME>: <SQL_COLUMN2_NAME>
+  - <INDEXER_COLUMN3_NAME>: <SQL_COLUMN3_NAME>
