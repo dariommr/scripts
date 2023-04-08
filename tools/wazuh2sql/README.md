@@ -58,10 +58,15 @@ UsageCount      = 1
         port = <SQL_SERVER_PORT>
         tds version = 7.3
 ```
+To select the correct `tds version` please refer to this [section](https://github.com/dariommr/scripts/tree/master/tools/wazuh2sql#choosing-the-tds-version).
 
 ## Script usage
 This scripts makes use of a configuration file and parameters to execute the orders correctly.
 You can find here, the script and a sample configuration file.
+### Scripts:
+- https://github.com/dariommr/scripts/blob/master/tools/wazuh2sql/wazuh2sql.py
+- https://github.com/dariommr/scripts/blob/master/tools/wazuh2sql/wazuh2sql_conf.yaml
+### Usage:
 ```shell
 # python3 wazuh2sql.py -h
 usage: wazuh2sql.py [-h] -c CONFIG_FILE -v VIS -t TABLE -d DAYS [--debug]
@@ -77,7 +82,7 @@ optional arguments:
   --debug               Enable debug mode logging.
 ```
 
-### Example
+### Example:
 In this example, we will take the visualization with the ID: `a7874860-1e3e-11ed-a227-5d94cf79ab73` and we will insert its data into the table `flooding_alerts` in the DB configured in the `wazuh2sql_conf.yaml` file.
 ```shell
 python3 wazuh2sql.py -c wazuh2sql_conf.yaml  -v "a7874860-1e3e-11ed-a227-5d94cf79ab73" -t flooding_alerts -d 30
