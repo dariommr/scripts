@@ -85,5 +85,8 @@ python3 wazuh2sql.py -c wazuh2sql_conf.yaml  -v "a7874860-1e3e-11ed-a227-5d94cf7
 
 ## Apendix
 ### Getting the Visualization ID:
-Yo obtain the ID, you need to navigate to Menu > Visualize and select the visualization you need (Table only), then you need to extract the ID from here:
+You can obtain the ID, you need to navigate to *Menu > Visualize* and select the visualization you need (Table only), then you need to extract the ID from here:
 ![image](https://user-images.githubusercontent.com/37050249/230723543-069c2034-dbc6-45d1-85a3-2c2ea52c5eec.png)
+
+### Choosing the TDS version
+In the `freetds.conf` file you need to specify the `tds version` setting in order to connect correctly to the SQL Server you need to, for this, please take a look at this document: https://www.freetds.org/userguide/ChoosingTdsProtocol.html
