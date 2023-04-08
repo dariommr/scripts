@@ -82,3 +82,8 @@ In this example, we will take the visualization with the ID: `a7874860-1e3e-11ed
 ```shell
 python3 wazuh2sql.py -c wazuh2sql_conf.yaml  -v "a7874860-1e3e-11ed-a227-5d94cf79ab73" -t flooding_alerts -d 30
 ```
+
+## Apendix
+### Getting the Visualization ID:
+Yo obtain the ID, you need to navigate to Menu > Visualize and select the visualization you need (Table only), then you need to extract the ID from here:
+![image](https://user-images.githubusercontent.com/37050249/230723543-069c2034-dbc6-45d1-85a3-2c2ea52c5eec.png)
