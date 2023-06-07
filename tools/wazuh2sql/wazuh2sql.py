@@ -73,6 +73,7 @@ def get_vis(vis_id):
                     it_query = item["query"]
                 if item["meta"]["type"] == "phrases":
                     vis_configs["query"] = item["query"]["bool"]
+                    it_query = item["query"]
                 if item["meta"]["type"] == "exists":
                     it_query = {"exists":{"field":item["meta"]["key"]}}
                 if item["meta"]["negate"]:
@@ -133,7 +134,6 @@ def build_aggs(vis_aggs,days):
         for key in vis_aggs["query"]:
             tmp_dict["query"]["bool"][key] = vis_aggs["query"][key]
     aggs_dict.update(tmp_dict)
-    
     return aggs_dict
 
 #Function to search in Wazuh Indexer
@@ -252,9 +252,11 @@ if __name__ == "__main__":
         visualization, idx_pattern = get_vis(args.vis)
         search_query = build_aggs(visualization, args.days)
         results = search(search_query, idx_pattern)
-        logging.info("Inserting data into SQL Table: {}".format(args.table))
-        arr_results = extract_data(results)
+        logging.info("Parsing the results")
+        res_key = list(results.keys())[0]
+        arr_results = extract_data(results, key=int(res_key))
         timestamp = str(datetime.now())
+        logging.info("Inserting data into SQL Table: {}".format(args.table))
         for row in arr_results:
             row.append(timestamp)
         head = match_columns(visualization)

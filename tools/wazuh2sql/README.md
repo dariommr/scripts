@@ -60,6 +60,17 @@ UsageCount      = 1
 ```
 To select the correct `tds version` please refer to this [section](https://github.com/dariommr/scripts/tree/master/tools/wazuh2sql#choosing-the-tds-version).
 
+### Table columns requisites
+The table should have one fixed column named `timestamp`, and one column for each metric, if you are using the metric type *count*, you should have a column named `count`. If you have more metrics in your visualization, you should have more columns with the name of the metric type.
+For instance, in our example we have:
+
+| rule_id | rule_description                                      | agent_name | count | timestamp                  |
+| ------- | ----------------------------------------------------- | ---------- | ----- | -------------------------- |
+| 773001  | The service apparmor.service is in exited status      |  wzh-man01 | 233   | 2023-06-07 11:53:17.198554 |
+| 773001  | The service console-setup.service is in exited status |  wzh-man01 | 233   | 2023-06-07 11:53:17.198554 |
+
+Where `rule_id`, `rule_description` y `agent_name` are the columns defined in the configuration file, while the column `count` is present because the metric used in the visualization. The `timestamp` column is needed to know the time when the data was added to the database, therefore needs to be set up in the destination table also.
+
 ## Script usage
 This scripts makes use of a configuration file and parameters to execute the orders correctly.
 You can find here, the script and a sample configuration file.
