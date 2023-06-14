@@ -252,7 +252,7 @@ if __name__ == "__main__":
         visualization, idx_pattern = get_vis(args.vis)
         search_query = build_aggs(visualization, args.days)
         results = search(search_query, idx_pattern)
-        logging.info("Parsing the results")
+        logging.debug("Parsing the results")
         res_key = list(results.keys())[0]
         arr_results = extract_data(results, key=int(res_key))
         timestamp = str(datetime.now())
@@ -260,6 +260,7 @@ if __name__ == "__main__":
         for row in arr_results:
             row.append(timestamp)
         head = match_columns(visualization)
+        logging.debug("Trying to insert data into columns: {}".format(head))
         arr_results = [head] + arr_results
         affected_rows = write_sql(args.table, arr_results)
         logging.info("{} Rows insterted into the SQL Table".format(affected_rows))
