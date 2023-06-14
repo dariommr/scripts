@@ -73,7 +73,6 @@ def get_vis(vis_id):
                     it_query = item["query"]
                 if item["meta"]["type"] == "phrases":
                     vis_configs["query"] = item["query"]["bool"]
-                    it_query = item["query"]
                 if item["meta"]["type"] == "exists":
                     it_query = {"exists":{"field":item["meta"]["key"]}}
                 if item["meta"]["negate"]:
@@ -134,6 +133,7 @@ def build_aggs(vis_aggs,days):
         for key in vis_aggs["query"]:
             tmp_dict["query"]["bool"][key] = vis_aggs["query"][key]
     aggs_dict.update(tmp_dict)
+    
     return aggs_dict
 
 #Function to search in Wazuh Indexer
@@ -157,6 +157,8 @@ def search(data_dict, pattern):
 def extract_data(in_dict, table=[], key=2, prefix={}):
     if "key" in in_dict.keys():
         prefix[str(key)] = in_dict["key"]
+    if len(in_dict[str(key)]["buckets"]) == 0:
+        raise Exception("No data in the received query result")
     for bucket in in_dict[str(key)]["buckets"]:
         tmp_list = []
         nkey = key + 1
@@ -252,15 +254,12 @@ if __name__ == "__main__":
         visualization, idx_pattern = get_vis(args.vis)
         search_query = build_aggs(visualization, args.days)
         results = search(search_query, idx_pattern)
-        logging.debug("Parsing the results")
-        res_key = list(results.keys())[0]
-        arr_results = extract_data(results, key=int(res_key))
+        arr_results = extract_data(results)
         timestamp = str(datetime.now())
-        logging.info("Inserting data into SQL Table: {}".format(args.table))
         for row in arr_results:
             row.append(timestamp)
+        logging.info("Inserting data into SQL Table: {}".format(args.table))
         head = match_columns(visualization)
-        logging.debug("Trying to insert data into columns: {}".format(head))
         arr_results = [head] + arr_results
         affected_rows = write_sql(args.table, arr_results)
         logging.info("{} Rows insterted into the SQL Table".format(affected_rows))
