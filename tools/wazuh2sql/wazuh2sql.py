@@ -252,11 +252,9 @@ if __name__ == "__main__":
         visualization, idx_pattern = get_vis(args.vis)
         search_query = build_aggs(visualization, args.days)
         results = search(search_query, idx_pattern)
-        print(results)
         logging.debug("Parsing the results")
         res_key = list(results.keys())[0]
         arr_results = extract_data(results, key=int(res_key))
-        print(arr_results)
         timestamp = str(datetime.now())
         logging.info("Inserting data into SQL Table: {}".format(args.table))
         for row in arr_results:
