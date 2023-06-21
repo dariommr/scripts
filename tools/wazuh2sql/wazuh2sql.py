@@ -132,7 +132,8 @@ def build_aggs(vis_aggs,days):
         tmp_dict["query"]["bool"]["must_not"] += vis_aggs["must_not"]
     if "query" in vis_aggs:
         for key in vis_aggs["query"]:
-            tmp_dict["query"]["bool"][key] = vis_aggs["query"][key]
+            if key != "filter":
+                tmp_dict["query"]["bool"][key] = vis_aggs["query"][key]
     aggs_dict.update(tmp_dict)
     return aggs_dict
 
@@ -220,6 +221,7 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--table', type=str, required=True, help='SQL Table to store the extracted data')
     parser.add_argument('-d', '--days', required=True, help="Number of days to query for")
     parser.add_argument('--debug', action='store_true', required=False, help='Enable debug mode logging.')
+    parser.add_argument('--dry-run', action='store_true', required=False, help='Show results to screen. Do not store on SQL.')
     args = parser.parse_args()
 
     DEBUG = args.debug
@@ -262,8 +264,13 @@ if __name__ == "__main__":
         head = match_columns(visualization)
         logging.debug("Trying to insert data into columns: {}".format(head))
         arr_results = [head] + arr_results
-        affected_rows = write_sql(args.table, arr_results)
-        logging.info("{} Rows insterted into the SQL Table".format(affected_rows))
+        if args.dry_run:
+            import pandas as pd
+            df = pd.DataFrame(arr_results)
+            print(df)
+        else:
+            affected_rows = write_sql(args.table, arr_results)
+            logging.info("{} Rows insterted into the SQL Table".format(affected_rows))
     except Exception as e:
         exc = sys.exc_info()
         logging.error("Error converting the data: [{}] {}".format(exc[2].tb_lineno, e))
