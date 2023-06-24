@@ -1,0 +1,5 @@
+connection:
+  wazuh:
+    indexerIp: INDEXER-IP:9200
+    username: admin
+    password: admin
