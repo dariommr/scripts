@@ -80,7 +80,7 @@ You can find here, the script and a sample configuration file.
 ### Usage:
 ```shell
 # python3 wazuh2sql.py -h
-usage: wazuh2sql.py [-h] -c CONFIG_FILE -v VIS -t TABLE -d DAYS [--debug]
+usage: wazuh2sql.py [-h] -c CONFIG_FILE -v VIS -t TABLE -d DAYS [--debug] [--dry-run]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -91,6 +91,7 @@ optional arguments:
                         SQL Table to store the extracted data
   -d DAYS, --days DAYS  Number of days to query for
   --debug               Enable debug mode logging.
+  --dry-run             Show results to screen. Do not store on SQL.
 ```
 
 ### Example:

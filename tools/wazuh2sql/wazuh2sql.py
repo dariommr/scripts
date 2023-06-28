@@ -12,7 +12,6 @@ import logging
 import requests
 import json, yaml
 import argparse
-import pyodbc
 from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore")
@@ -42,6 +41,11 @@ def set_logger(name, logfile=None):
         fileHandler.setFormatter(formatter)
         logging.getLogger('').addHandler(fileHandler)
 
+def handle_exception(message, err):
+    exc = sys.exc_info()
+    logging.error("{}: [{}] {}".format(message, exc[2].tb_lineno, err))
+    sys.exit(1)
+
 # Retrieve visualization properties from the Wazuh Dashboard
 def get_vis(vis_id):
     hook_url = "https://"+DASH_IP+"/api/saved_objects/visualization/"+vis_id
@@ -53,8 +57,7 @@ def get_vis(vis_id):
         else:
             logging.info("Visualization information retrieved successfully")
     except Exception as e:
-        logging.error("Failed to retrieve visualization information: {}".format(e))
-        sys.exit(1)
+        handle_exception("Failed to retrieve visualization information", e)
     try:
         query_config = json.loads(data["attributes"]["kibanaSavedObjectMeta"]["searchSourceJSON"])
         vis_configs = json.loads(data["attributes"]["visState"])
@@ -69,20 +72,19 @@ def get_vis(vis_id):
             vis_configs["must_not"] = []
             vis_configs["query"] = []
             for item in query_config["filter"]:
-                if item["meta"]["type"] == "phrase":
-                    it_query = item["query"]
-                if item["meta"]["type"] == "phrases":
-                    vis_configs["query"] = item["query"]["bool"]
-                    it_query = item["query"]
-                if item["meta"]["type"] == "exists":
-                    it_query = {"exists":{"field":item["meta"]["key"]}}
-                if item["meta"]["negate"]:
-                    vis_configs["must_not"].append(it_query)
-                else:
-                    vis_configs["filter"].append(it_query)
+                if not item["meta"]["disabled"]:
+                    if item["meta"]["type"] in ["phrase", "phrases"]:
+                        it_query = item["query"]
+                    if item["meta"]["type"] == "range":
+                        it_query = {"range": item["range"]}
+                    if item["meta"]["type"] == "exists":
+                        it_query = {"exists":{"field":item["meta"]["key"]}}
+                    if item["meta"]["negate"]:
+                        vis_configs["must_not"].append(it_query)
+                    else:
+                        vis_configs["filter"].append(it_query)
     except Exception as e:
-        logging.error("Error. The visualization contains not supported configurations: {}".format(e))
-        sys.exit(1)
+        handle_exception("The visualization contains not supported configurations", e)
     return vis_configs, pattern
 
 #Function to build the search query from the visualization parameters
@@ -151,8 +153,7 @@ def search(data_dict, pattern):
         else:
             return result["aggregations"]
     except Exception as e:
-        logging.error("Failed to execute search in Wazuh Indexer: {}".format(e))
-        sys.exit(1)
+        handle_exception("Failed to execute search in Wazuh Indexer", e)
 
 #Converts the aggregations results into a table (array of rows)
 def extract_data(in_dict, table=[], key=2, prefix={}):
@@ -245,33 +246,31 @@ if __name__ == "__main__":
 
         logging.debug("All configurations readed from the config file: {}".format(args.config_file))
     except Exception as e:
-        exc = sys.exc_info()
-        logging.error("Error obtaining settings from config file: [{}] {}".format(exc[2].tb_lineno, e))
-        sys.exit(1)
+        handle_exception("Error obtaining settings from config file", e)
     
     try:
         logging.info("Querying the Wazuh Indexer")
         visualization, idx_pattern = get_vis(args.vis)
         search_query = build_aggs(visualization, args.days)
         results = search(search_query, idx_pattern)
-        logging.debug("Parsing the results")
+        logging.debug("Parsing the rows from visualization: {}".format(visualization["title"]))
         res_key = list(results.keys())[0]
         arr_results = extract_data(results, key=int(res_key))
         timestamp = str(datetime.now())
-        logging.info("Inserting data into SQL Table: {}".format(args.table))
         for row in arr_results:
             row.append(timestamp)
         head = match_columns(visualization)
-        logging.debug("Trying to insert data into columns: {}".format(head))
+        logging.debug("Creating array with columns: {}".format(head))
         arr_results = [head] + arr_results
         if args.dry_run:
+            logging.debug("Dry Run selected, writting the data to the Standard Output")
             import pandas as pd
             df = pd.DataFrame(arr_results)
-            print(df)
+            print("\n"+visualization["title"]+"\n", df)
         else:
+            logging.info("Inserting data into SQL Table: {}".format(args.table))
+            import pyodbc
             affected_rows = write_sql(args.table, arr_results)
             logging.info("{} Rows insterted into the SQL Table".format(affected_rows))
     except Exception as e:
-        exc = sys.exc_info()
-        logging.error("Error converting the data: [{}] {}".format(exc[2].tb_lineno, e))
-        sys.exit(1)
+        handle_exception("Error converting the data", e)
