@@ -165,7 +165,7 @@ def extract_data(in_dict, table=[], key=2, prefix={}):
         if str(nkey) in bucket:
             extract_data(bucket, table, nkey, prefix)
         else:
-            for tk in range(3,key+1):
+            for tk in range(RES_KEY+1,key+1):
                 tmp_list.append(prefix[str(tk)])
             tmp_list.append(bucket["key"])
             tmp_list.append(bucket["doc_count"])
@@ -254,8 +254,8 @@ if __name__ == "__main__":
         search_query = build_aggs(visualization, args.days)
         results = search(search_query, idx_pattern)
         logging.debug("Parsing the rows from visualization: {}".format(visualization["title"]))
-        res_key = list(results.keys())[0]
-        arr_results = extract_data(results, key=int(res_key))
+        RES_KEY = int(list(results.keys())[0])
+        arr_results = extract_data(results, key=RES_KEY)
         timestamp = str(datetime.now())
         for row in arr_results:
             row.append(timestamp)
