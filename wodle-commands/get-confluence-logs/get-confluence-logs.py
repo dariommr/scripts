@@ -18,6 +18,9 @@ from socket import socket, AF_UNIX, SOCK_DGRAM
 
 ################################################## Global variables ##################################################
 
+# Integration Identifier
+int_id = "confluence"
+
 # Atlassian resource
 resource = "https://rently.atlassian.net/wiki/rest/api/audit"
 
@@ -25,7 +28,7 @@ resource = "https://rently.atlassian.net/wiki/rest/api/audit"
 socketAddr = '/var/ossec/queue/sockets/queue'
 
 # Location of the log file. Set it in <None> if no need for logfile
-logfile = "/var/ossec/logs/confluence-logs-api.log"
+logfolder = "/var/ossec/logs"
 
 ################################################## Common functions ##################################################
 
@@ -79,6 +82,7 @@ if __name__ == "__main__":
     query_url = resource+"?from{}&?to={}".format(previous_utc_hour, current_time)
  
     # Start logging config
+    logfile = os.path.join(logfolder, "{}.log".format(int_id))
     if args.debug:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s: [%(levelname)s] %(message)s', datefmt="%Y-%m-%d %H:%M:%S", filename=logfile)
     else:
@@ -108,6 +112,7 @@ if __name__ == "__main__":
         for event in data["results"]:
             event_time = event["creationDate"]
             if event_time > int(epoch_prev):
+                event = { int_id: event }
                 json_event = json.dumps(event)
                 logging.debug("Sending event: {}".format(json_event))
                 send_event(json_event)

@@ -151,7 +151,7 @@ if __name__ == "__main__":
             last_time = event["alertCreationTime"]
             event_time = dateutil.parser.isoparse(last_time)
             if event_time.replace(tzinfo=None) > prev_time.replace(tzinfo=None):
-                event = { int_id: event} # if you don't want a header for the event, remove this line.
+                event = { int_id: event } # if you don't want a header for the event, remove this line.
                 json_event = json.dumps(event)
                 logging.debug("Sending event: {}".format(json_event))
                 send_event(json_event)

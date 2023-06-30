@@ -17,6 +17,9 @@ from socket import socket, AF_UNIX, SOCK_DGRAM
 
 ################################################## Global variables ##################################################
 
+# Integration Identifier
+int_id = "jira"
+
 # Atlassian resource
 resource = "https://rently.atlassian.net/rest/api/3/auditing/record"
 
@@ -79,6 +82,7 @@ if __name__ == "__main__":
     query_url = resource+"?from={}&?to={}".format(previous_utc_hour, current_time)
  
     # Start logging config
+    logfile = os.path.join(logfolder, "{}.log".format(int_id))
     if args.debug:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s: [%(levelname)s] %(message)s', datefmt="%Y-%m-%d %H:%M:%S", filename=logfile)
     else:
@@ -113,6 +117,7 @@ if __name__ == "__main__":
             for event in data["records"]:
                 event_time = dateutil.parser.isoparse(event["created"])
                 if event_time.replace(tzinfo=None) > prev_time.replace(tzinfo=None):
+                    event = { int_id: event }
                     json_event = json.dumps(event)
                     logging.debug("Sending event: {}".format(json_event))
                     send_event(json_event)
