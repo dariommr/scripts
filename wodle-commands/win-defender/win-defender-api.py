@@ -5,7 +5,7 @@
 # This program is a free software; you can redistribute it and/or modify it under the terms of GPLv2
 
 import argparse
-import os, os.path
+import os, sys
 import json
 import requests
 import logging
@@ -22,6 +22,9 @@ from socket import socket, AF_UNIX, SOCK_DGRAM
 #os.environ['https_proxy'] = proxy
 #os.environ['HTTPS_PROXY'] = proxy
 
+# Integration Identifier
+int_id = "microsoft-defender-api"
+
 # Microsoft resource
 resource = "https://api.securitycenter.microsoft.com"
 
@@ -29,14 +32,33 @@ resource = "https://api.securitycenter.microsoft.com"
 socketAddr = '/var/ossec/queue/sockets/queue'
 
 # Location of the log file. Set it in <None> if no need for logfile
-logfile = "/var/ossec/logs/win-defender-api.log"
+logfolder = "/var/ossec/logs"
 
 ################################################## Common functions ##################################################
+
+# Enables logging and configure it
+def set_logger(name, logfile=None):
+    hostname = os.uname()[1]
+    format = '%(asctime)s {0} {1}: [%(levelname)s] %(message)s'.format(hostname, name)
+    formatter = logging.Formatter(format)
+    if DEBUG:
+        logging.getLogger('').setLevel(logging.DEBUG)
+    else:
+        logging.getLogger('').setLevel(logging.INFO)
+
+    streamHandler = logging.StreamHandler(sys.stdout)
+    streamHandler.setFormatter(formatter)
+    logging.getLogger('').addHandler(streamHandler)
+    
+    if logfile:
+        fileHandler = logging.FileHandler(logfile)
+        fileHandler.setFormatter(formatter)
+        logging.getLogger('').addHandler(fileHandler)
 
 # Send event to Wazuh manager
 def send_event(msg):
     logging.debug('Sending {} to {} socket.'.format(msg, socketAddr))
-    string = '1:win_defender_api:{}'.format(msg)
+    string = '1:microsoft_defender_api:{}'.format(msg)
     sock = socket(AF_UNIX, SOCK_DGRAM)
     sock.connect(socketAddr)
     sock.send(string.encode())
@@ -44,15 +66,19 @@ def send_event(msg):
 
 # Perform HTTP request
 def make_request(method, url, headers, data=None):
-    response = requests.request(method, url, headers=headers, data=data)
-
-    # If the request succeed 
-    if response.status_code >= 200 and response.status_code < 210:
-        return response
-    if method == "POST" and response.status_code == 400:
-        return response
-    else:
-        raise Exception('Request ', method, ' ', url, ' failed with ', response.status_code, ' - ', response.text)
+    try:
+        response = requests.request(method, url, headers=headers, data=data)
+        logging.debug("Making the request: {}".format(data))
+    # If the request succeed
+        if response.status_code >= 200 and response.status_code < 210:
+            return response
+        else:
+            resp_dict = json.loads(response.text)
+            raise Exception("Code {} - {}".format(response.status_code, resp_dict["error_description"]))
+    except Exception as e:
+        exc = sys.exc_info()
+        logging.error("Error while contacting Microsoft: [{}] {}".format(exc[2].tb_lineno, e))
+        sys.exit(1)
 
 # Obtain a token for accessing the Windows Defender API
 def obtain_access_token(tenantId, clientId, clientSecret):
@@ -93,18 +119,17 @@ if __name__ == "__main__":
     parser.add_argument('--clientSecret', metavar='clientSecret', type=str, required = True, help='Client secret.')
     parser.add_argument('--debug', action='store_true', required = False, help='Enable debug mode logging.')
     args = parser.parse_args()
-    defender_url = "https://api.securitycenter.microsoft.com/api/alerts"
+    defender_url = "{}/api/alerts".format(resource)
  
     # Start logging config
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s: [%(levelname)s] %(message)s', datefmt="%Y-%m-%d %H:%M:%S", filename=logfile)
-    else:
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s: [%(levelname)s] %(message)s', datefmt="%Y-%m-%d %H:%M:%S", filename=logfile)
+    DEBUG = args.debug
+    logfile = os.path.join(logfolder, "{}.log".format(int_id))
+    set_logger(int_id, logfile)
 
     logging.info("------- Starting the Defender Integration Script -------")
     logging.info("Parameters loaded successfully")
 
-    if os.path.isfile('defender-last-id'):
+    if os.path.isfile('defender-last-id') and os.stat('defender-last-id').st_size != 0:
         prev_file = open('defender-last-id', "r")
         prev_time = dateutil.parser.isoparse(prev_file.read())
         logging.debug("Last date file loaded successfully")
@@ -121,18 +146,20 @@ if __name__ == "__main__":
         logging.info("Microsoft Defender logs retrieved")
         data_sorted = sorted(data["value"], key=lambda d: d['alertCreationTime']) 
         cant = 0
-        logging.info("Sending events to Wazuh Manager from date: {}".format(prev_time))
+        logging.info("Processing events from date: {}".format(prev_time))
         for event in data_sorted:
             last_time = event["alertCreationTime"]
             event_time = dateutil.parser.isoparse(last_time)
             if event_time.replace(tzinfo=None) > prev_time.replace(tzinfo=None):
+                event = { int_id: event} # if you don't want a header for the event, remove this line.
                 json_event = json.dumps(event)
                 logging.debug("Sending event: {}".format(json_event))
                 send_event(json_event)
                 cant += 1
-        logging.info("Finished collecting events. {} events sent to Wazuh Manager".format(cant))
+        logging.info("Finished processing events. {} events sent to Wazuh Manager".format(cant))
         if cant > 0:
             last_file = open('defender-last-id', "w")
             last_file.write(last_time)
     except Exception as e:
-        logging.error("Error while retrieving Defender Security logs: {}.".format(e))
+        exc = sys.exc_info()
+        logging.error("Error while processing Microsoft Defender Security alerts: [{}] {}".format(exc[2].tb_lineno, e))
