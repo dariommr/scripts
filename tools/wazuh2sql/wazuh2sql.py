@@ -102,6 +102,9 @@ def build_aggs(vis_aggs,days):
                         if block["params"]["orderBy"] == metric["id"]:
                             met = "_"+metric["type"]
                             inner_agg["terms"]["order"][met] = block["params"]["order"]
+                        else:
+                            orderby = block["params"]["orderBy"]
+                            inner_agg["terms"]["order"][orderby] = block["params"]["order"]
                     inner_agg["terms"]["size"] = block["params"]["size"]
                     if "include" in block["params"]:
                         inner_agg["terms"]["include"] = block["params"]["include"]
@@ -252,7 +255,6 @@ if __name__ == "__main__":
         logging.info("Querying the Wazuh Indexer")
         visualization, idx_pattern = get_vis(args.vis)
         search_query = build_aggs(visualization, args.days)
-        #idx_pattern = "wazuh-alerts-*"                                    #Enable this line if you are on CCS environment
         results = search(search_query, idx_pattern)
         logging.debug("Parsing the rows from visualization: {}".format(visualization["title"]))
         RES_KEY = int(list(results.keys())[0])
@@ -262,11 +264,12 @@ if __name__ == "__main__":
             row.append(timestamp)
         head = match_columns(visualization)
         logging.debug("Creating array with columns: {}".format(head))
+        arr_wo_head = arr_results
         arr_results = [head] + arr_results
         if args.dry_run:
             logging.debug("Dry Run selected, writting the data to the Standard Output")
             import pandas as pd
-            df = pd.DataFrame(arr_results)
+            df = pd.DataFrame(arr_wo_head, columns=head)
             print("\n"+visualization["title"]+"\n", df)
         else:
             logging.info("Inserting data into SQL Table: {}".format(args.table))
