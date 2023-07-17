@@ -255,6 +255,7 @@ if __name__ == "__main__":
         logging.info("Querying the Wazuh Indexer")
         visualization, idx_pattern = get_vis(args.vis)
         search_query = build_aggs(visualization, args.days)
+        #idx_pattern = "wazuh-alerts-*" 
         results = search(search_query, idx_pattern)
         logging.debug("Parsing the rows from visualization: {}".format(visualization["title"]))
         RES_KEY = int(list(results.keys())[0])
