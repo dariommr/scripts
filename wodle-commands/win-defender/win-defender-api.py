@@ -23,7 +23,7 @@ from socket import socket, AF_UNIX, SOCK_DGRAM
 #os.environ['HTTPS_PROXY'] = proxy
 
 # Integration Identifier
-int_id = "microsoft-defender-api"
+int_id = "microsoft-defender"
 
 # Microsoft resource
 resource = "https://api.securitycenter.microsoft.com"
@@ -151,7 +151,7 @@ if __name__ == "__main__":
             last_time = event["alertCreationTime"]
             event_time = dateutil.parser.isoparse(last_time)
             if event_time.replace(tzinfo=None) > prev_time.replace(tzinfo=None):
-                event = { int_id: event } # if you don't want a header for the event, remove this line.
+                event = { int_id: event, "integration": int_id }
                 json_event = json.dumps(event)
                 logging.debug("Sending event: {}".format(json_event))
                 send_event(json_event)

@@ -52,7 +52,7 @@ This rule will catch all the logs from the script and convert them into alerts:
 <group name="win-defender,">
   <rule id="293400" level="3">
     <decoded_as>json</decoded_as>
-    <location>win_defender_api</location>
+    <field name="integration">microsoft-defender</field>
     <description>Microsoft Defender Rules</description>
   </rule>
 </group>
