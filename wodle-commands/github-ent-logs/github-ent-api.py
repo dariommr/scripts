@@ -153,8 +153,8 @@ if __name__ == "__main__":
             event_time = last_time
             if event_time > prev_time:
                 event["endpoint"] = endpoint
+                event = { int_id: event }
                 event["integration"] = int_id
-                event = { int_id: event } # if you don't want a header for the event, remove this line.
                 json_event = json.dumps(event)
                 logging.debug("Sending event: {}".format(json_event))
                 send_event(json_event)
