@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     list_s3 = []
     try:
-        list_s3 = get_files_s3(s3, 'test-backup-script')
+        list_s3 = get_files_s3(s3, args.bucket)
         logging.info("List of s3 objects generated successfully. Number of objects retrieved: {}".format(len(list_s3)))
     except Exception as e:
         exc = sys.exc_info()
